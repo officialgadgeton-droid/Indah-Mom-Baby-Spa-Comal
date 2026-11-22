@@ -28,6 +28,7 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 
 interface BookingWizardProps {
@@ -83,9 +84,11 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
     }
   }, [selectedServicePreset]);
 
-  // Load saved customer data from localStorage
+  // Load saved customer data from localStorage (Auto-fill customer profile)
   useEffect(() => {
-    const saved = localStorage.getItem('imb_customer_profile');
+    const saved =
+      localStorage.getItem('indah_spa_customer_profile') ||
+      localStorage.getItem('imb_customer_profile');
     if (saved) {
       try {
         const parsed: SavedCustomerData = JSON.parse(saved);
@@ -94,12 +97,26 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
         if (parsed.child_name) setChildName(parsed.child_name);
         if (parsed.child_age) setChildAge(parsed.child_age);
         if (parsed.address) setAddress(parsed.address);
-        setIsSavedCustomer(true);
+        if (parsed.mom_name || parsed.whatsapp_number) {
+          setIsSavedCustomer(true);
+        }
       } catch {
         // ignore
       }
     }
   }, []);
+
+  // Handler untuk mengosongkan data diri jika perangkat dipakai Bunda lain
+  const handleClearCustomerData = () => {
+    localStorage.removeItem('indah_spa_customer_profile');
+    localStorage.removeItem('imb_customer_profile');
+    setMomName('');
+    setWhatsapp('');
+    setChildName('');
+    setChildAge('');
+    setAddress('');
+    setIsSavedCustomer(false);
+  };
 
   // Fetch real-time booked & blocked slots when date changes
   useEffect(() => {
@@ -184,7 +201,9 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
         child_age: childAge.trim(),
         address: address.trim(),
       };
+      localStorage.setItem('indah_spa_customer_profile', JSON.stringify(profileToSave));
       localStorage.setItem('imb_customer_profile', JSON.stringify(profileToSave));
+      setIsSavedCustomer(true);
 
       setCurrentStep(4);
     }
@@ -215,6 +234,18 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
       if (result.success && result.booking) {
         setCreatedBooking(result.booking);
         success(`Reservasi berhasil dibuat dengan kode ${result.booking.booking_code}!`);
+
+        // Simpan / update profil pelanggan ke localStorage
+        const latestProfile: SavedCustomerData = {
+          mom_name: momName.trim(),
+          whatsapp_number: whatsapp.trim(),
+          child_name: childName.trim(),
+          child_age: childAge.trim(),
+          address: address.trim(),
+        };
+        localStorage.setItem('indah_spa_customer_profile', JSON.stringify(latestProfile));
+        localStorage.setItem('imb_customer_profile', JSON.stringify(latestProfile));
+        setIsSavedCustomer(true);
 
         // Format Pesan WhatsApp (Tanpa Harga)
         const cleanClinicWa = clinicWaLink;
@@ -525,21 +556,30 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
             {/* STEP 3: CUSTOMER & CHILD DATA */}
             {currentStep === 3 && (
               <div className="space-y-4 animate-bounce-in">
-                {isSavedCustomer && (
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Data Bunda terisi otomatis dari kunjungan sebelumnya.</span>
-                    </span>
+                {isSavedCustomer && momName && (
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50/90 via-[#FAF6F0] to-primary/5 border border-accent/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-accent/20 text-accent-dark flex items-center justify-center shrink-0 shadow-xs">
+                        <Sparkles className="w-5 h-5 text-accent-dark" />
+                      </div>
+                      <div>
+                        <div className="text-xs sm:text-sm font-bold text-primary">
+                          Selamat datang kembali, Bunda {momName}! 🌸
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-charcoal-light mt-0.5">
+                          Data Bunda &amp; Si Kecil sudah kami siapkan agar reservasi lebih cepat.
+                        </p>
+                      </div>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => {
-                        localStorage.removeItem('imb_customer_profile');
-                        setIsSavedCustomer(false);
-                      }}
-                      className="underline text-[11px] text-emerald-900 hover:text-emerald-700"
+                      onClick={handleClearCustomerData}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-rose-200 bg-white hover:bg-rose-50 text-[11px] font-bold text-charcoal-light hover:text-rose-700 transition-all shrink-0 self-end sm:self-auto shadow-xs"
+                      title="Kosongkan form jika perangkat digunakan oleh Bunda lain"
                     >
-                      Reset Data
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Ganti Data / Bunda Lain</span>
                     </button>
                   </div>
                 )}

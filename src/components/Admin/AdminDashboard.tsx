@@ -10,9 +10,11 @@ import {
   Database,
   ExternalLink,
   MessageSquareHeart,
+  Users,
 } from 'lucide-react';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { BookingsTab } from './BookingsTab';
+import { CustomersTab } from './CustomersTab';
 import { ServicesTab } from './ServicesTab';
 import { BlockedSlotsTab } from './BlockedSlotsTab';
 import { SettingsTab } from './SettingsTab';
@@ -24,7 +26,13 @@ interface AdminDashboardProps {
   onBackToHome: () => void;
 }
 
-export type AdminTab = 'bookings' | 'services' | 'testimonials' | 'blocked' | 'settings';
+export type AdminTab =
+  | 'bookings'
+  | 'customers'
+  | 'services'
+  | 'testimonials'
+  | 'blocked'
+  | 'settings';
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   adminPin,
@@ -112,6 +120,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('customers')}
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-bold border-b-2 whitespace-nowrap transition-all ${
+                activeTab === 'customers'
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-transparent text-charcoal-light hover:text-primary hover:border-slate-300'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Data Pelanggan</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('services')}
               className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-bold border-b-2 whitespace-nowrap transition-all ${
                 activeTab === 'services'
@@ -165,6 +185,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {activeTab === 'bookings' && <BookingsTab adminPin={adminPin} />}
+        {activeTab === 'customers' && <CustomersTab adminPin={adminPin} />}
         {activeTab === 'services' && <ServicesTab adminPin={adminPin} />}
         {activeTab === 'testimonials' && <TestimonialsTab adminPin={adminPin} />}
         {activeTab === 'blocked' && <BlockedSlotsTab adminPin={adminPin} />}

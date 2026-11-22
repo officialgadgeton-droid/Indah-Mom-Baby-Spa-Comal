@@ -26,7 +26,7 @@ const STORAGE_KEYS = {
   BOOKINGS: 'imb_bookings_v2',
   BLOCKED_SLOTS: 'imb_blocked_slots',
   SETTINGS: 'imb_settings',
-  CUSTOMER_DATA: 'imb_customer_profile',
+  CUSTOMER_DATA: 'indah_spa_customer_profile',
   TESTIMONIALS: 'indah_spa_testimonials',
 };
 
@@ -87,6 +87,23 @@ function getLocalBookings(): Booking[] {
         notes: 'Bayi batuk pilek 2 hari, hidung tersumbat.',
         status: 'pending',
         created_at: new Date().toISOString(),
+      },
+      {
+        id: 'bk-sample-3',
+        booking_code: 'IMB-20261115-E5F6',
+        visit_type: 'Datang ke Klinik',
+        service_id: 'srv-bk-1',
+        service_name: 'Baby Massage & Spa Sehat',
+        booking_date: new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0],
+        booking_time: '09:00',
+        mom_name: 'Bunda Rina Setyowati',
+        whatsapp_number: '081234567891',
+        child_name: 'Alvaro',
+        child_age: '6 Bulan',
+        address: 'Comal, Pemalang',
+        notes: 'Alhamdulillah pijatan pertama sangat cocok, anak tidur lelap.',
+        status: 'completed',
+        created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
       }
     ];
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(sampleBookings));
