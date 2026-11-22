@@ -16,7 +16,114 @@ import {
 import { RevealOnScroll } from './RevealOnScroll';
 import { Testimonial } from '../types';
 import { fetchActiveTestimonials } from '../lib/supabase';
-import { INITIAL_TESTIMONIALS } from '../data/initialTestimonials';
+
+const WhatsAppPreviewIllustration: React.FC<{ isPlaceholder?: boolean }> = () => (
+  <div className="w-full h-full bg-[#EFEAE2] flex flex-col justify-between font-sans select-none overflow-hidden relative text-left">
+    {/* WhatsApp Chat Wallpaper Pattern Overlay */}
+    <div
+      className="absolute inset-0 opacity-[0.06] pointer-events-none"
+      style={{
+        backgroundImage: `radial-gradient(#000 1px, transparent 1px)`,
+        backgroundSize: '16px 16px',
+      }}
+    />
+
+    {/* WhatsApp Header Bar */}
+    <div className="bg-[#075E54] text-white px-3 py-2.5 pt-7 flex items-center justify-between shrink-0 shadow-md relative z-10">
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-xs font-bold text-white shadow-2xs">
+          🌸
+        </div>
+        <div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-bold leading-tight tracking-tight">Bidan Indah Comal</span>
+            <ShieldCheck className="w-3 h-3 text-[#25D366]" />
+          </div>
+          <span className="text-[9px] text-white/80 block leading-tight">online • Praktik Mandiri</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2.5 text-white/90">
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+        </svg>
+        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.44-5.15-3.75-6.59-6.59l1.97-1.57c.26-.26.35-.65.24-1.02A11.36 11.36 0 018.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z" />
+        </svg>
+        <div className="flex flex-col gap-0.5">
+          <div className="w-0.5 h-0.5 rounded-full bg-white" />
+          <div className="w-0.5 h-0.5 rounded-full bg-white" />
+          <div className="w-0.5 h-0.5 rounded-full bg-white" />
+        </div>
+      </div>
+    </div>
+
+    {/* Chat Messages Body */}
+    <div className="flex-1 p-3 overflow-y-auto space-y-2.5 relative z-10 text-[11px]">
+      {/* Date Stamp */}
+      <div className="flex justify-center my-1">
+        <span className="bg-white/85 shadow-2xs text-charcoal-light text-[9px] font-semibold px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+          Hari ini
+        </span>
+      </div>
+
+      {/* Bubble 1 (Customer Bunda) */}
+      <div className="flex justify-end">
+        <div className="bg-[#E7FFDB] text-charcoal rounded-2xl rounded-tr-xs p-2.5 max-w-[85%] shadow-xs relative">
+          <p className="leading-snug">
+            Assalamualaikum Bu Bidan Indah.. Mau ngabari, semalam adik Alvaro pules bgt tidurnya abis ikutan Baby Spa! Biasanya rewel jam 1, ini nyenyak sampai pagi 🥰👶
+          </p>
+          <div className="flex items-center justify-end gap-1 mt-1 text-[9px] text-charcoal-light">
+            <span>08:15</span>
+            <span className="text-[#34B7F1] font-bold">✓✓</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bubble 2 (Bidan Indah) */}
+      <div className="flex justify-start">
+        <div className="bg-white text-charcoal rounded-2xl rounded-tl-xs p-2.5 max-w-[88%] shadow-xs relative border border-slate-100">
+          <p className="leading-snug">
+            Wa'alaikumsalam Bunda Alvaro.. Alhamdulillah ya Bun! Rileksasi pijat & gymball memang bikin otot bayi lebih rileks & nyaman. Terima kasih banyak yaa sudah mempercayakan perawatan Si Kecil di Indah Spa Comal 🌸🙏
+          </p>
+          <div className="flex items-center justify-end gap-1 mt-1 text-[9px] text-charcoal-light">
+            <span>08:17</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bubble 3 (Customer Bunda) */}
+      <div className="flex justify-end">
+        <div className="bg-[#E7FFDB] text-charcoal rounded-2xl rounded-tr-xs p-2.5 max-w-[82%] shadow-xs relative">
+          <p className="leading-snug">
+            Iya Bu Bidan, pelayanannya ramah bgt dan kliniknya bersih harum. Besok mau reservasi paket bapil lagi kalau dedek mulai bersin ❤️
+          </p>
+          <div className="flex items-center justify-end gap-1 mt-1 text-[9px] text-charcoal-light">
+            <span>08:19</span>
+            <span className="text-[#34B7F1] font-bold">✓✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* WhatsApp Input Mockup Footer */}
+    <div className="p-2 bg-[#F0F2F5] border-t border-slate-200/80 flex items-center gap-1.5 shrink-0 relative z-10">
+      <div className="flex-1 bg-white rounded-full px-3 py-1.5 flex items-center justify-between text-slate-400 text-[10px] shadow-2xs">
+        <span>Ketik pesan...</span>
+        <div className="flex items-center gap-1.5 text-slate-400">
+          <span>📎</span>
+          <span>📷</span>
+        </div>
+      </div>
+      <div className="w-7 h-7 rounded-full bg-[#00A884] text-white flex items-center justify-center shrink-0 shadow-2xs">
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+);
 
 const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24">
@@ -42,22 +149,23 @@ const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' })
 export const TestimonialsSection: React.FC = () => {
   const googleMapsReviewsUrl = 'https://maps.app.goo.gl/c1cY4NA9KrtNzVz57';
 
-  // Testimonials state (combined static initial + uploaded from Supabase / localStorage)
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(INITIAL_TESTIMONIALS);
+  // Testimonials state (uploaded from Supabase / localStorage)
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadTestimonials = async () => {
       try {
         const data = await fetchActiveTestimonials();
-        if (data && data.length > 0) {
+        if (data && Array.isArray(data)) {
           setTestimonials(data);
         }
       } catch (err) {
-        console.warn('Gagal memuat testimoni, menggunakan data default:', err);
+        console.warn('Gagal memuat testimoni:', err);
       }
     };
 
@@ -78,15 +186,17 @@ export const TestimonialsSection: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (lightboxIndex === null) return;
       if (e.key === 'Escape') setLightboxIndex(null);
-      if (e.key === 'ArrowRight') {
-        setLightboxIndex((prev) =>
-          prev !== null ? (prev + 1) % testimonials.length : null
-        );
-      }
-      if (e.key === 'ArrowLeft') {
-        setLightboxIndex((prev) =>
-          prev !== null ? (prev - 1 + testimonials.length) % testimonials.length : null
-        );
+      if (testimonials.length > 1 && lightboxIndex >= 0) {
+        if (e.key === 'ArrowRight') {
+          setLightboxIndex((prev) =>
+            prev !== null && prev >= 0 ? (prev + 1) % testimonials.length : null
+          );
+        }
+        if (e.key === 'ArrowLeft') {
+          setLightboxIndex((prev) =>
+            prev !== null && prev >= 0 ? (prev - 1 + testimonials.length) % testimonials.length : null
+          );
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -94,10 +204,12 @@ export const TestimonialsSection: React.FC = () => {
   }, [lightboxIndex, testimonials.length]);
 
   const handlePrev = () => {
+    if (testimonials.length <= 1) return;
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
   const handleNext = () => {
+    if (testimonials.length <= 1) return;
     setCurrentIndex((prev) => (prev + 1) % testimonials.length);
   };
 
@@ -111,7 +223,7 @@ export const TestimonialsSection: React.FC = () => {
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
+    if (!touchStartX || !touchEndX || testimonials.length <= 1) return;
     const distance = touchStartX - touchEndX;
     if (distance > 45) {
       handleNext();
@@ -122,7 +234,8 @@ export const TestimonialsSection: React.FC = () => {
     setTouchEndX(null);
   };
 
-  const currentTestimonial = testimonials[currentIndex] || testimonials[0];
+  const hasUploadedTestimonials = testimonials.length > 0;
+  const currentTestimonial = hasUploadedTestimonials ? testimonials[currentIndex] || testimonials[0] : null;
 
   const googleReviews = [
     {
@@ -180,32 +293,34 @@ export const TestimonialsSection: React.FC = () => {
         {/* ======================================================== */}
         {/* FITUR 1: GALERI MOCKUP LAYAR HP TESTIMONI WHATSAPP       */}
         {/* ======================================================== */}
-        {testimonials.length > 0 && (
-          <RevealOnScroll variant="fade-up" delay={150}>
-            <div className="mb-20 max-w-5xl mx-auto">
-              <div className="bg-gradient-to-br from-white via-cream/40 to-white rounded-3xl p-6 sm:p-10 border border-primary/10 shadow-card relative overflow-hidden">
-                {/* Decorative background glow */}
-                <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-accent/15 rounded-full blur-3xl pointer-events-none" />
+        <RevealOnScroll variant="fade-up" delay={150}>
+          <div className="mb-20 max-w-5xl mx-auto">
+            <div className="bg-gradient-to-br from-white via-cream/40 to-white rounded-3xl p-6 sm:p-10 border border-primary/10 shadow-card relative overflow-hidden">
+              {/* Decorative background glow */}
+              <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-accent/15 rounded-full blur-3xl pointer-events-none" />
 
-                {/* Subheader Gallery */}
-                <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-2 border border-emerald-200">
-                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Tangkapan Layar Chat WhatsApp Asli</span>
-                  </div>
-                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
-                    Bunda Berbagi Kebahagiaan
-                  </h3>
-                  <p className="text-xs sm:text-sm text-charcoal-light mt-1">
-                    Geser foto untuk melihat bukti kepuasan Bunda lainnya. Klik layar HP untuk membaca chat dalam resolusi penuh.
-                  </p>
+              {/* Subheader Gallery */}
+              <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-2 border border-emerald-200">
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{hasUploadedTestimonials ? 'Tangkapan Layar Chat WhatsApp Asli' : 'Preview Chat WhatsApp'}</span>
                 </div>
+                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+                  Bunda Berbagi Kebahagiaan
+                </h3>
+                <p className="text-xs sm:text-sm text-charcoal-light mt-1">
+                  {hasUploadedTestimonials && testimonials.length > 1
+                    ? 'Geser foto untuk melihat bukti kepuasan Bunda lainnya. Klik layar HP untuk membaca chat dalam resolusi penuh.'
+                    : 'Lihat bukti kehangatan pelayanan kami. Klik layar HP untuk membaca obrolan dalam tampilan penuh.'}
+                </p>
+              </div>
 
-                {/* Smartphone Mockup Container & Navigation */}
-                <div className="relative flex flex-col items-center">
-                  <div className="relative w-full max-w-md flex items-center justify-center">
-                    {/* Previous Button (Desktop Side) */}
+              {/* Smartphone Mockup Container & Navigation */}
+              <div className="relative flex flex-col items-center">
+                <div className="relative w-full max-w-md flex items-center justify-center">
+                  {/* Previous Button (Desktop Side) */}
+                  {testimonials.length > 1 && (
                     <button
                       type="button"
                       onClick={handlePrev}
@@ -214,8 +329,10 @@ export const TestimonialsSection: React.FC = () => {
                     >
                       <ChevronLeft className="w-6 h-6" />
                     </button>
+                  )}
 
-                    {/* Next Button (Desktop Side) */}
+                  {/* Next Button (Desktop Side) */}
+                  {testimonials.length > 1 && (
                     <button
                       type="button"
                       onClick={handleNext}
@@ -224,64 +341,74 @@ export const TestimonialsSection: React.FC = () => {
                     >
                       <ChevronRight className="w-6 h-6" />
                     </button>
+                  )}
 
-                    {/* SMARTPHONE FRAME MOCKUP */}
-                    <div
-                      className="w-full max-w-[310px] sm:max-w-[340px] bg-slate-950 rounded-[44px] p-3 shadow-2xl border-[6px] border-slate-800 ring-1 ring-white/10 relative transition-transform duration-300 hover:shadow-2xl"
-                      onTouchStart={handleTouchStart}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
-                    >
-                      {/* Top Dynamic Island / Notch Mockup */}
-                      <div className="w-24 h-5 bg-black rounded-full mx-auto absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none">
-                        <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-700/80 mr-3" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
-                      </div>
-
-                      {/* Phone Screen Area */}
-                      <div
-                        onClick={() => setLightboxIndex(currentIndex)}
-                        className="rounded-[34px] overflow-hidden bg-slate-900 aspect-[9/17.5] relative cursor-pointer select-none group"
-                        title="Klik untuk memperbesar foto"
-                      >
-                        {/* Display Current Testimonial Screenshot */}
-                        {currentTestimonial && (
-                          <img
-                            key={currentTestimonial.id}
-                            src={currentTestimonial.image_url}
-                            alt={currentTestimonial.caption || 'Testimoni WhatsApp'}
-                            className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                          />
-                        )}
-
-                        {/* Gloss glass reflection overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
-
-                        {/* Hover / Tap Pill: Klik untuk Perbesar */}
-                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center p-4">
-                          <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 text-primary text-xs font-bold shadow-lg backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                            <ZoomIn className="w-4 h-4 text-accent" />
-                            <span>Klik untuk Perbesar</span>
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Home Indicator Bar (iPhone bottom pill) */}
-                      <div className="w-28 h-1 bg-white/30 rounded-full mx-auto mt-2" />
+                  {/* SMARTPHONE FRAME MOCKUP */}
+                  <div
+                    className="w-full max-w-[310px] sm:max-w-[340px] bg-slate-950 rounded-[44px] p-3 shadow-2xl border-[6px] border-slate-800 ring-1 ring-white/10 relative transition-transform duration-300 hover:shadow-2xl"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    {/* Top Dynamic Island / Notch Mockup */}
+                    <div className="w-24 h-5 bg-black rounded-full mx-auto absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none">
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-700/80 mr-3" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                     </div>
-                  </div>
 
-                  {/* Mobile Navigation Controls & Caption */}
-                  <div className="mt-6 flex flex-col items-center gap-3 w-full max-w-md">
-                    {/* Caption badge */}
-                    {currentTestimonial?.caption && (
-                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/15 text-primary text-xs sm:text-sm font-bold text-center">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                        <span>{currentTestimonial.caption}</span>
+                    {/* Phone Screen Area */}
+                    <div
+                      onClick={() => setLightboxIndex(hasUploadedTestimonials ? currentIndex : -1)}
+                      className="rounded-[34px] overflow-hidden bg-slate-900 aspect-[9/17.5] relative cursor-pointer select-none group"
+                      title="Klik untuk memperbesar foto"
+                    >
+                      {/* Display Current Testimonial Screenshot or Aesthetic WhatsApp Illustration */}
+                      {hasUploadedTestimonials && currentTestimonial && !brokenImages[currentTestimonial.id] ? (
+                        <img
+                          key={currentTestimonial.id}
+                          src={currentTestimonial.image_url}
+                          alt={currentTestimonial.caption || 'Testimoni WhatsApp'}
+                          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                          onError={() => setBrokenImages((prev) => ({ ...prev, [currentTestimonial.id]: true }))}
+                        />
+                      ) : (
+                        <WhatsAppPreviewIllustration isPlaceholder={!hasUploadedTestimonials} />
+                      )}
+
+                      {/* Gloss glass reflection overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
+
+                      {/* Hover / Tap Pill: Klik untuk Perbesar */}
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center p-4">
+                        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 text-primary text-xs font-bold shadow-lg backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                          <ZoomIn className="w-4 h-4 text-accent" />
+                          <span>Klik untuk Perbesar</span>
+                        </span>
                       </div>
-                    )}
+                    </div>
 
-                    {/* Mobile Prev / Next Arrows */}
+                    {/* Home Indicator Bar (iPhone bottom pill) */}
+                    <div className="w-28 h-1 bg-white/30 rounded-full mx-auto mt-2" />
+                  </div>
+                </div>
+
+                {/* Mobile Navigation Controls & Caption */}
+                <div className="mt-6 flex flex-col items-center gap-3 w-full max-w-md">
+                  {/* Caption badge */}
+                  {hasUploadedTestimonials && currentTestimonial?.caption ? (
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/15 text-primary text-xs sm:text-sm font-bold text-center">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>{currentTestimonial.caption}</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold text-center">
+                      <Sparkles className="w-3.5 h-3.5 text-accent" />
+                      <span>{hasUploadedTestimonials ? 'Testimoni WhatsApp' : 'Ilustrasi Percakapan WhatsApp Asli'}</span>
+                    </div>
+                  )}
+
+                  {/* Mobile Prev / Next Arrows */}
+                  {testimonials.length > 1 && (
                     <div className="flex sm:hidden items-center justify-center gap-4 w-full">
                       <button
                         type="button"
@@ -305,8 +432,10 @@ export const TestimonialsSection: React.FC = () => {
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
+                  )}
 
-                    {/* Dot indicators & Thumbnail Selector */}
+                  {/* Dot indicators & Thumbnail Selector */}
+                  {testimonials.length > 1 && (
                     <div className="flex items-center gap-2 pt-2">
                       {testimonials.map((t, idx) => (
                         <button
@@ -322,12 +451,12 @@ export const TestimonialsSection: React.FC = () => {
                         />
                       ))}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
-          </RevealOnScroll>
-        )}
+          </div>
+        </RevealOnScroll>
 
         {/* ======================================================== */}
         {/* FITUR 2: GOOGLE MAPS REVIEWS & 5.0 RATING BANNER         */}
@@ -441,7 +570,7 @@ export const TestimonialsSection: React.FC = () => {
       {/* ======================================================== */}
       {/* MODAL LIGHTBOX: KLIK UNTUK PERBESAR RESOLUSI PENUH       */}
       {/* ======================================================== */}
-      {lightboxIndex !== null && testimonials[lightboxIndex] && (
+      {lightboxIndex !== null && (
         <div
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fade-in"
           onClick={() => setLightboxIndex(null)}
@@ -454,14 +583,16 @@ export const TestimonialsSection: React.FC = () => {
             {/* Top Toolbar (Counter, Caption, Close Button) */}
             <div className="w-full flex items-center justify-between pb-3 text-white">
               <span className="text-xs font-semibold bg-white/20 px-3 py-1 rounded-full">
-                {lightboxIndex + 1} dari {testimonials.length}
+                {lightboxIndex >= 0 && testimonials[lightboxIndex]
+                  ? `${lightboxIndex + 1} dari ${testimonials.length}`
+                  : 'Preview Percakapan'}
               </span>
 
-              {testimonials[lightboxIndex].caption && (
-                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[200px] sm:max-w-xs">
-                  {testimonials[lightboxIndex].caption}
-                </span>
-              )}
+              <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[200px] sm:max-w-xs">
+                {lightboxIndex >= 0 && testimonials[lightboxIndex]
+                  ? testimonials[lightboxIndex].caption || 'Testimoni WhatsApp'
+                  : 'Obrolan Asli Pelanggan'}
+              </span>
 
               <button
                 type="button"
@@ -473,10 +604,10 @@ export const TestimonialsSection: React.FC = () => {
               </button>
             </div>
 
-            {/* Main Lightbox Image with Left & Right Arrow controls */}
+            {/* Main Lightbox Content with Left & Right Arrow controls */}
             <div className="relative w-full flex items-center justify-center">
               {/* Previous Button inside Lightbox */}
-              {testimonials.length > 1 && (
+              {testimonials.length > 1 && lightboxIndex >= 0 && (
                 <button
                   type="button"
                   onClick={() =>
@@ -491,14 +622,32 @@ export const TestimonialsSection: React.FC = () => {
                 </button>
               )}
 
-              <img
-                src={testimonials[lightboxIndex].image_url}
-                alt={testimonials[lightboxIndex].caption || 'Screenshot WhatsApp'}
-                className="max-h-[80vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/10"
-              />
+              {lightboxIndex >= 0 && testimonials[lightboxIndex] ? (
+                brokenImages[testimonials[lightboxIndex].id] ? (
+                  <div className="w-[300px] sm:w-[340px] aspect-[9/17.5] rounded-3xl overflow-hidden shadow-2xl border border-white/20">
+                    <WhatsAppPreviewIllustration />
+                  </div>
+                ) : (
+                  <img
+                    src={testimonials[lightboxIndex].image_url}
+                    alt={testimonials[lightboxIndex].caption || 'Screenshot WhatsApp'}
+                    className="max-h-[80vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/10"
+                    onError={() =>
+                      setBrokenImages((prev) => ({
+                        ...prev,
+                        [testimonials[lightboxIndex].id]: true,
+                      }))
+                    }
+                  />
+                )
+              ) : (
+                <div className="w-[300px] sm:w-[340px] aspect-[9/17.5] rounded-3xl overflow-hidden shadow-2xl border border-white/20">
+                  <WhatsAppPreviewIllustration isPlaceholder={true} />
+                </div>
+              )}
 
               {/* Next Button inside Lightbox */}
-              {testimonials.length > 1 && (
+              {testimonials.length > 1 && lightboxIndex >= 0 && (
                 <button
                   type="button"
                   onClick={() =>
@@ -514,7 +663,9 @@ export const TestimonialsSection: React.FC = () => {
 
             {/* Bottom helper info */}
             <p className="text-[11px] text-white/70 mt-3 text-center">
-              Gunakan tombol panah kiri / kanan keyboard atau geser untuk beralih foto. Tekan ESC untuk menutup.
+              {testimonials.length > 1
+                ? 'Gunakan tombol panah kiri / kanan keyboard atau geser untuk beralih foto. Tekan ESC untuk menutup.'
+                : 'Tekan ESC atau klik area luar untuk menutup.'}
             </p>
           </div>
         </div>

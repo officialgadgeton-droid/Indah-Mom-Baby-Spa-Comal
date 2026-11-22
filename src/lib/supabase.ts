@@ -137,18 +137,27 @@ export function getLocalSettings(): AppSettings {
 export function getLocalTestimonials(): Testimonial[] {
   const data = localStorage.getItem(STORAGE_KEYS.TESTIMONIALS);
   if (!data) {
-    localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(INITIAL_TESTIMONIALS));
-    return INITIAL_TESTIMONIALS;
+    return [];
   }
   try {
     const parsed = JSON.parse(data);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+    if (Array.isArray(parsed)) {
+      // Bersihkan dummy lama yang broken atau ber-ID testi-initial
+      const cleaned = parsed.filter(
+        (t: Testimonial) =>
+          t &&
+          t.id &&
+          !t.id.startsWith('testi-initial') &&
+          !t.image_url?.startsWith('/testimoni/chat-')
+      );
+      if (cleaned.length !== parsed.length) {
+        localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(cleaned));
+      }
+      return cleaned;
     }
-    localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(INITIAL_TESTIMONIALS));
-    return INITIAL_TESTIMONIALS;
+    return [];
   } catch {
-    return INITIAL_TESTIMONIALS;
+    return [];
   }
 }
 
@@ -659,8 +668,11 @@ export async function fetchActiveTestimonials(): Promise<Testimonial[]> {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         return data as Testimonial[];
+      }
+      if (error) {
+        console.warn('Gagal fetch active testimonials dari Supabase:', error);
       }
     } catch (e) {
       console.warn('Gagal fetch testimonials dari Supabase, fallback ke lokal:', e);
@@ -681,6 +693,9 @@ export async function fetchAllTestimonialsAdmin(): Promise<Testimonial[]> {
       if (!error && data) {
         return data as Testimonial[];
       }
+      if (error) {
+        console.warn('Gagal fetch all testimonials dari Supabase:', error);
+      }
     } catch (e) {
       console.warn('Gagal fetch all testimonials dari Supabase:', e);
     }
@@ -692,11 +707,13 @@ export async function fetchAllTestimonialsAdmin(): Promise<Testimonial[]> {
 export async function uploadTestimonialImage(
   file: Blob,
   fileName: string
-): Promise<string | null> {
-  if (!supabase) return null;
+): Promise<{ url: string | null; error?: string }> {
+  if (!supabase) {
+    return { url: null, error: 'Koneksi Supabase belum aktif.' };
+  }
 
   try {
-    const { error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('testimonials')
       .upload(fileName, file, {
         contentType: 'image/jpeg',
@@ -704,18 +721,28 @@ export async function uploadTestimonialImage(
       });
 
     if (uploadError) {
-      console.warn('Supabase storage upload error:', uploadError);
-      return null;
+      console.error('Supabase storage upload error:', uploadError);
+      return {
+        url: null,
+        error: uploadError.message || 'Gagal mengunggah foto ke storage Supabase.',
+      };
     }
 
     const { data } = supabase.storage
       .from('testimonials')
-      .getPublicUrl(fileName);
+      .getPublicUrl(uploadData?.path || fileName);
 
-    return data?.publicUrl || null;
-  } catch (err) {
-    console.warn('Gagal upload gambar ke Supabase Storage:', err);
-    return null;
+    if (!data?.publicUrl) {
+      return { url: null, error: 'Gagal mendapatkan Public URL dari Supabase Storage.' };
+    }
+
+    return { url: data.publicUrl };
+  } catch (err: any) {
+    console.error('Gagal upload gambar ke Supabase Storage:', err);
+    return {
+      url: null,
+      error: err?.message || 'Terjadi kesalahan jaringan saat upload ke storage.',
+    };
   }
 }
 
@@ -727,63 +754,36 @@ export async function saveTestimonial(
     caption?: string;
     is_active?: boolean;
   }
-): Promise<Testimonial | null> {
+): Promise<Testimonial> {
   const isUpdate = Boolean(testimonial.id && !testimonial.id.startsWith('testi-'));
 
   if (supabase) {
-    try {
-      // Coba gunakan RPC admin_manage_testimonial jika tersedia
-      const { data: rpcData, error: rpcError } = await supabase.rpc('admin_manage_testimonial', {
-        pin_input: pin,
-        p_action: isUpdate ? 'update' : 'create',
-        p_id: isUpdate ? testimonial.id : null,
-        p_image_url: testimonial.image_url,
-        p_caption: testimonial.caption || '',
-        p_is_active: testimonial.is_active ?? true,
-      });
+    // WAJIB memanggil RPC admin_manage_testimonial (bukan .from('testimonials').insert/update)
+    const { data: rpcData, error: rpcError } = await supabase.rpc('admin_manage_testimonial', {
+      pin_input: pin,
+      p_action: isUpdate ? 'update' : 'create',
+      p_id: isUpdate ? testimonial.id : null,
+      p_image_url: testimonial.image_url,
+      p_caption: testimonial.caption || '',
+      p_is_active: testimonial.is_active ?? true,
+    });
 
-      if (!rpcError && rpcData) {
-        return {
-          id: rpcData,
-          image_url: testimonial.image_url,
-          caption: testimonial.caption,
-          is_active: testimonial.is_active ?? true,
-          created_at: new Date().toISOString(),
-        };
-      }
-
-      // Fallback ke direct table insert jika RPC belum di-apply
-      if (isUpdate) {
-        const { data, error } = await supabase
-          .from('testimonials')
-          .update({
-            image_url: testimonial.image_url,
-            caption: testimonial.caption,
-            is_active: testimonial.is_active ?? true,
-          })
-          .eq('id', testimonial.id)
-          .select()
-          .single();
-
-        if (!error && data) return data as Testimonial;
-      } else {
-        const { data, error } = await supabase
-          .from('testimonials')
-          .insert([
-            {
-              image_url: testimonial.image_url,
-              caption: testimonial.caption,
-              is_active: testimonial.is_active ?? true,
-            },
-          ])
-          .select()
-          .single();
-
-        if (!error && data) return data as Testimonial;
-      }
-    } catch (e) {
-      console.warn('Supabase save testimonial error, fallback ke local:', e);
+    if (rpcError) {
+      console.error('RPC admin_manage_testimonial error:', rpcError);
+      throw new Error(rpcError.message || 'Gagal menyimpan testimoni via RPC');
     }
+
+    if (!rpcData) {
+      throw new Error('Gagal mendapatkan ID konfirmasi testimoni dari server.');
+    }
+
+    return {
+      id: rpcData,
+      image_url: testimonial.image_url,
+      caption: testimonial.caption,
+      is_active: testimonial.is_active ?? true,
+      created_at: new Date().toISOString(),
+    };
   }
 
   // Fallback Local Storage Mode
@@ -816,30 +816,23 @@ export async function saveTestimonial(
 
 export async function toggleTestimonialStatus(pin: string, id: string): Promise<boolean> {
   if (supabase) {
-    try {
+    const isLocalId = id.startsWith('testi-');
+    if (!isLocalId) {
+      // WAJIB memanggil RPC admin_manage_testimonial (bukan .from('testimonials').update)
       const { error } = await supabase.rpc('admin_manage_testimonial', {
         pin_input: pin,
         p_action: 'toggle_active',
         p_id: id,
+        p_image_url: null,
+        p_caption: null,
+        p_is_active: true,
       });
-      if (!error) return true;
 
-      // Fallback direct toggle
-      const { data: current } = await supabase
-        .from('testimonials')
-        .select('is_active')
-        .eq('id', id)
-        .single();
-
-      if (current) {
-        const { error: updErr } = await supabase
-          .from('testimonials')
-          .update({ is_active: !current.is_active })
-          .eq('id', id);
-        if (!updErr) return true;
+      if (error) {
+        console.error('RPC toggle testimonial status error:', error);
+        throw new Error(error.message || 'Gagal mengubah status testimoni via RPC');
       }
-    } catch (e) {
-      console.warn('RPC toggle testimonial error:', e);
+      return true;
     }
   }
 
@@ -855,22 +848,23 @@ export async function toggleTestimonialStatus(pin: string, id: string): Promise<
 
 export async function deleteTestimonial(pin: string, id: string): Promise<boolean> {
   if (supabase) {
-    try {
+    const isLocalId = id.startsWith('testi-');
+    if (!isLocalId) {
+      // WAJIB memanggil RPC admin_manage_testimonial (bukan .from('testimonials').delete)
       const { error } = await supabase.rpc('admin_manage_testimonial', {
         pin_input: pin,
         p_action: 'delete',
         p_id: id,
+        p_image_url: null,
+        p_caption: null,
+        p_is_active: false,
       });
-      if (!error) return true;
 
-      // Fallback direct delete
-      const { error: delErr } = await supabase
-        .from('testimonials')
-        .delete()
-        .eq('id', id);
-      if (!delErr) return true;
-    } catch (e) {
-      console.warn('RPC delete testimonial error:', e);
+      if (error) {
+        console.error('RPC delete testimonial error:', error);
+        throw new Error(error.message || 'Gagal menghapus testimoni via RPC');
+      }
+      return true;
     }
   }
 

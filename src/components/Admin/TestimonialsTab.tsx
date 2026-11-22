@@ -49,6 +49,8 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
 
   // Lightbox Modal for previewing
   const [previewImage, setPreviewImage] = useState<{ url: string; caption?: string } | null>(null);
+  // Broken image tracker to prevent rendering broken image icons
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   const loadTestimonials = async () => {
     setIsLoading(true);
@@ -116,7 +118,7 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
       let finalImageUrl = compressionResult.dataUrl;
       let storageMode: 'supabase' | 'local' = 'local';
 
-      // 1. Jika Supabase aktif, coba upload blob ke Supabase Storage bucket 'testimonials'
+      // 1. Jika Supabase aktif, upload blob ke Supabase Storage bucket 'testimonials'
       if (isSupabaseConfigured) {
         const fileExt = 'jpg';
         const cleanName = caption
@@ -124,16 +126,15 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
           : 'testi';
         const fileName = `wa-${cleanName}-${Date.now()}.${fileExt}`;
 
-        const uploadedUrl = await uploadTestimonialImage(compressionResult.blob, fileName);
-        if (uploadedUrl) {
-          finalImageUrl = uploadedUrl;
-          storageMode = 'supabase';
-        } else {
-          console.warn('Storage Supabase belum siap, otomatis beralih ke localStorage mode preview.');
+        const uploadRes = await uploadTestimonialImage(compressionResult.blob, fileName);
+        if (uploadRes.error || !uploadRes.url) {
+          throw new Error(`Upload ke Storage gagal: ${uploadRes.error || 'URL tidak tersedia'}`);
         }
+        finalImageUrl = uploadRes.url;
+        storageMode = 'supabase';
       }
 
-      // 2. Simpan record data
+      // 2. Simpan record data via RPC admin_manage_testimonial
       const result = await saveTestimonial(adminPin, {
         image_url: finalImageUrl,
         caption: caption.trim() || undefined,
@@ -144,16 +145,16 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
         if (storageMode === 'supabase') {
           success('Foto testimoni berhasil di-upload ke Supabase Cloud!');
         } else {
-          success('Testimoni berhasil disimpan di Local Storage (Mode Siap Pakai)!');
+          success('Testimoni berhasil disimpan di Local Storage (Mode Preview)!');
         }
         handleResetForm();
         loadTestimonials();
       } else {
         error('Gagal menyimpan data testimoni.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      error('Terjadi kendala saat upload testimoni.');
+      error(err?.message || 'Terjadi kendala saat upload testimoni.');
     } finally {
       setIsSubmitting(false);
     }
@@ -172,9 +173,9 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
       } else {
         error('Gagal mengubah status testimoni.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      error('Terjadi kesalahan koneksi.');
+      error(e?.message || 'Terjadi kesalahan saat mengubah status testimoni.');
     }
   };
 
@@ -189,9 +190,9 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
       } else {
         error('Gagal menghapus testimoni.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      error('Terjadi kesalahan saat menghapus.');
+      error(e?.message || 'Terjadi kesalahan saat menghapus testimoni.');
     }
   };
 
@@ -589,12 +590,23 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
               >
                 {/* Image Preview Container (Smartphone Aspect Ratio) */}
                 <div className="relative aspect-[9/14] bg-slate-900/5 overflow-hidden">
-                  <img
-                    src={item.image_url}
-                    alt={item.caption || 'Testimoni WhatsApp'}
-                    className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                  />
+                  {brokenImages[item.id] ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 p-4 text-center">
+                      <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center mb-2">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-600">Foto Gagal Dimuat</span>
+                      <span className="text-[9px] text-slate-400 mt-0.5">Tautan gambar tidak valid</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={item.image_url}
+                      alt={item.caption || 'Testimoni WhatsApp'}
+                      className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      onError={() => setBrokenImages((prev) => ({ ...prev, [item.id]: true }))}
+                    />
+                  )}
 
                   {/* Gradient Overlay & Hover Actions */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-3">
@@ -722,11 +734,20 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
             </button>
 
             {/* Image Preview */}
-            <img
-              src={previewImage.url}
-              alt={previewImage.caption || 'Preview'}
-              className="max-h-[80vh] w-auto object-contain rounded-2xl shadow-2xl border border-white/20"
-            />
+            {brokenImages[previewImage.url] ? (
+              <div className="bg-slate-900/90 text-white p-8 rounded-2xl flex flex-col items-center text-center max-w-sm">
+                <ImageIcon className="w-12 h-12 text-slate-400 mb-3" />
+                <p className="font-bold text-sm">Gambar Gagal Dimuat</p>
+                <p className="text-xs text-slate-400 mt-1">Berkas foto tidak dapat diakses atau URL tidak valid.</p>
+              </div>
+            ) : (
+              <img
+                src={previewImage.url}
+                alt={previewImage.caption || 'Preview'}
+                className="max-h-[80vh] w-auto object-contain rounded-2xl shadow-2xl border border-white/20"
+                onError={() => setBrokenImages((prev) => ({ ...prev, [previewImage.url]: true }))}
+              />
+            )}
 
             {previewImage.caption && (
               <div className="mt-3 bg-black/60 px-4 py-2 rounded-full text-white text-xs font-semibold border border-white/20 text-center">

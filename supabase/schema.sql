@@ -629,6 +629,11 @@ CREATE POLICY "Allow Upload Testimonials"
 ON storage.objects FOR INSERT
 WITH CHECK (bucket_id = 'testimonials');
 
+DROP POLICY IF EXISTS "Allow Update Testimonials" ON storage.objects;
+CREATE POLICY "Allow Update Testimonials"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'testimonials');
+
 DROP POLICY IF EXISTS "Allow Delete Testimonials" ON storage.objects;
 CREATE POLICY "Allow Delete Testimonials"
 ON storage.objects FOR DELETE
