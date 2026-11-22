@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Star,
   Quote,
@@ -10,121 +10,22 @@ import {
   ZoomIn,
   X,
   MessageCircle,
-  Smartphone,
+  Pause,
+  Play,
   ShieldCheck,
 } from 'lucide-react';
 import { RevealOnScroll } from './RevealOnScroll';
 import { Testimonial } from '../types';
 import { fetchActiveTestimonials } from '../lib/supabase';
 
-const WhatsAppPreviewIllustration: React.FC<{ isPlaceholder?: boolean }> = () => (
-  <div className="w-full h-full bg-[#EFEAE2] flex flex-col justify-between font-sans select-none overflow-hidden relative text-left">
-    {/* WhatsApp Chat Wallpaper Pattern Overlay */}
-    <div
-      className="absolute inset-0 opacity-[0.06] pointer-events-none"
-      style={{
-        backgroundImage: `radial-gradient(#000 1px, transparent 1px)`,
-        backgroundSize: '16px 16px',
-      }}
-    />
-
-    {/* WhatsApp Header Bar */}
-    <div className="bg-[#075E54] text-white px-3 py-2.5 pt-7 flex items-center justify-between shrink-0 shadow-md relative z-10">
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-xs font-bold text-white shadow-2xs">
-          🌸
-        </div>
-        <div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-bold leading-tight tracking-tight">Bidan Indah Comal</span>
-            <ShieldCheck className="w-3 h-3 text-[#25D366]" />
-          </div>
-          <span className="text-[9px] text-white/80 block leading-tight">online • Praktik Mandiri</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2.5 text-white/90">
-        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
-        </svg>
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.44-5.15-3.75-6.59-6.59l1.97-1.57c.26-.26.35-.65.24-1.02A11.36 11.36 0 018.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z" />
-        </svg>
-        <div className="flex flex-col gap-0.5">
-          <div className="w-0.5 h-0.5 rounded-full bg-white" />
-          <div className="w-0.5 h-0.5 rounded-full bg-white" />
-          <div className="w-0.5 h-0.5 rounded-full bg-white" />
-        </div>
-      </div>
-    </div>
-
-    {/* Chat Messages Body */}
-    <div className="flex-1 p-3 overflow-y-auto space-y-2.5 relative z-10 text-[11px]">
-      {/* Date Stamp */}
-      <div className="flex justify-center my-1">
-        <span className="bg-white/85 shadow-2xs text-charcoal-light text-[9px] font-semibold px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-          Hari ini
-        </span>
-      </div>
-
-      {/* Bubble 1 (Customer Bunda) */}
-      <div className="flex justify-end">
-        <div className="bg-[#E7FFDB] text-charcoal rounded-2xl rounded-tr-xs p-2.5 max-w-[85%] shadow-xs relative">
-          <p className="leading-snug">
-            Assalamualaikum Bu Bidan Indah.. Mau ngabari, semalam adik Alvaro pules bgt tidurnya abis ikutan Baby Spa! Biasanya rewel jam 1, ini nyenyak sampai pagi 🥰👶
-          </p>
-          <div className="flex items-center justify-end gap-1 mt-1 text-[9px] text-charcoal-light">
-            <span>08:15</span>
-            <span className="text-[#34B7F1] font-bold">✓✓</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Bubble 2 (Bidan Indah) */}
-      <div className="flex justify-start">
-        <div className="bg-white text-charcoal rounded-2xl rounded-tl-xs p-2.5 max-w-[88%] shadow-xs relative border border-slate-100">
-          <p className="leading-snug">
-            Wa'alaikumsalam Bunda Alvaro.. Alhamdulillah ya Bun! Rileksasi pijat & gymball memang bikin otot bayi lebih rileks & nyaman. Terima kasih banyak yaa sudah mempercayakan perawatan Si Kecil di Indah Spa Comal 🌸🙏
-          </p>
-          <div className="flex items-center justify-end gap-1 mt-1 text-[9px] text-charcoal-light">
-            <span>08:17</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Bubble 3 (Customer Bunda) */}
-      <div className="flex justify-end">
-        <div className="bg-[#E7FFDB] text-charcoal rounded-2xl rounded-tr-xs p-2.5 max-w-[82%] shadow-xs relative">
-          <p className="leading-snug">
-            Iya Bu Bidan, pelayanannya ramah bgt dan kliniknya bersih harum. Besok mau reservasi paket bapil lagi kalau dedek mulai bersin ❤️
-          </p>
-          <div className="flex items-center justify-end gap-1 mt-1 text-[9px] text-charcoal-light">
-            <span>08:19</span>
-            <span className="text-[#34B7F1] font-bold">✓✓</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* WhatsApp Input Mockup Footer */}
-    <div className="p-2 bg-[#F0F2F5] border-t border-slate-200/80 flex items-center gap-1.5 shrink-0 relative z-10">
-      <div className="flex-1 bg-white rounded-full px-3 py-1.5 flex items-center justify-between text-slate-400 text-[10px] shadow-2xs">
-        <span>Ketik pesan...</span>
-        <div className="flex items-center gap-1.5 text-slate-400">
-          <span>📎</span>
-          <span>📷</span>
-        </div>
-      </div>
-      <div className="w-7 h-7 rounded-full bg-[#00A884] text-white flex items-center justify-center shrink-0 shadow-2xs">
-        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-        </svg>
-      </div>
-    </div>
-  </div>
+// SVG Icon WhatsApp Resmi
+const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.174.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z" />
+  </svg>
 );
 
+// Google Icon Resmi
 const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24">
     <path
@@ -146,13 +47,98 @@ const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' })
   </svg>
 );
 
+// Data Sample Chat WhatsApp jika database belum mengunggah foto
+interface SampleChatData {
+  id: string;
+  senderName: string;
+  senderSubtitle: string;
+  avatarEmoji: string;
+  chatText: string;
+  replyText: string;
+  time: string;
+  serviceTag: string;
+  caption: string;
+}
+
+const SAMPLE_CHATS: SampleChatData[] = [
+  {
+    id: 'sample-alvaro',
+    senderName: 'Bunda Alvaro',
+    senderSubtitle: 'Comal • Pasien Terverifikasi',
+    avatarEmoji: '👶',
+    chatText:
+      'Assalamualaikum Bu Bidan Indah.. Mau ngabari, semalam adik Alvaro pules bgt tidurnya abis ikutan Baby Spa! Biasanya rewel jam 1, ini nyenyak sampai pagi 🥰👶',
+    replyText:
+      "Wa'alaikumsalam Bunda Alvaro.. Alhamdulillah ya Bun! Rileksasi pijat & gymball memang bikin otot bayi lebih rileks & nyaman. Terima kasih ya Bun 🌸🙏",
+    time: '08:15',
+    serviceTag: 'Paket Baby Spa & Pijat Stimulasi',
+    caption: 'Bunda Alvaro • Tidur Nyenyak Sampai Pagi',
+  },
+  {
+    id: 'sample-zahra',
+    senderName: 'Bunda Zahra',
+    senderSubtitle: 'Pemalang • Pasien Terverifikasi',
+    avatarEmoji: '🌸',
+    chatText:
+      'Bu Bidan Indah, makasih banyak yaa. Pijat bapilnya manjur bgt, dahaknya keluar & dedek ga grok-grok lagi napasnya. Langsung plong bobonya 🌸🙏',
+    replyText:
+      'Alhamdulillah Bunda Zahra.. Senang sekali mendengarnya. Hangat minyak telon herbal bantu pernapasan dedek lebih lega & rileks ya Bun ❤️',
+    time: '10:42',
+    serviceTag: 'Terapi Batuk Pilek (Bapil)',
+    caption: 'Bunda Zahra • Terapi Bapil Manjur & Lega',
+  },
+  {
+    id: 'sample-kimi',
+    senderName: 'Bunda Kimi',
+    senderSubtitle: 'Ulujami • Pasien Terverifikasi',
+    avatarEmoji: '✨',
+    chatText:
+      'Suka bgt kliniknya estetik, bersih & wangi.. Bu Bidan telaten & ramah bgt sama anak. Dedek yg biasanya takut orang baru malah ceria bgt 😍',
+    replyText:
+      'Terima kasih banyak Bunda Kimi atas kepercayaannya! Ditunggu kedatangan adik Kimi berikutnya yaa Bun, salam hangat 🌸🥰',
+    time: '14:20',
+    serviceTag: 'Baby Swim & Gymball Therapy',
+    caption: 'Bunda Kimi • Klinik Bersih & Bidan Telaten',
+  },
+  {
+    id: 'sample-rayyan',
+    senderName: 'Bunda Rayyan',
+    senderSubtitle: 'Comal • Pasien Terverifikasi',
+    avatarEmoji: '🏡',
+    chatText:
+      'Pelayanan homecare nya mantap bgt Bu Bidan! Tepat waktu, alat higienis & dedek nyaman bgt dipijat di rumah tanpa drama rewel 🏠✨',
+    replyText:
+      'Sama-sama Bunda Rayyan! Senang bisa mendampingi Si Kecil tanpa Bunda harus repot keluar rumah. Sehat selalu adik ganteng ya Bun 🙏',
+    time: '16:05',
+    serviceTag: 'Homecare Bidan ke Rumah',
+    caption: 'Bunda Rayyan • Homecare Nyaman & Tepat Waktu',
+  },
+];
+
+// Unified Card Item Type
+type DisplayItem =
+  | {
+      type: 'image';
+      id: string;
+      imageUrl: string;
+      caption: string;
+      subtitle: string;
+    }
+  | {
+      type: 'sample';
+      id: string;
+      sample: SampleChatData;
+      caption: string;
+      subtitle: string;
+    };
+
 export const TestimonialsSection: React.FC = () => {
   const googleMapsReviewsUrl = 'https://maps.app.goo.gl/c1cY4NA9KrtNzVz57';
 
   // Testimonials state (uploaded from Supabase / localStorage)
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
@@ -181,39 +167,60 @@ export const TestimonialsSection: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  // Keyboard navigation untuk Lightbox
+  // Format list item unik untuk galeri
+  const uniqueItems: DisplayItem[] = useMemo(() => {
+    if (testimonials.length > 0) {
+      return testimonials.map((t) => ({
+        type: 'image' as const,
+        id: t.id,
+        imageUrl: t.image_url,
+        caption: t.caption || 'Testimoni WhatsApp',
+        subtitle: 'Bunda Bahagia • Pasien Terverifikasi',
+      }));
+    }
+    return SAMPLE_CHATS.map((s) => ({
+      type: 'sample' as const,
+      id: s.id,
+      sample: s,
+      caption: s.caption,
+      subtitle: s.senderSubtitle,
+    }));
+  }, [testimonials]);
+
+  // Siapkan deretan kartu untuk animasi horizontal marquee seamless loop
+  // Jika item unik hanya 1 atau 2, duplikasi hingga minimal 6-8 kartu agar putaran animasi berjalan mulus tanpa celah
+  const marqueeCards: DisplayItem[] = useMemo(() => {
+    if (uniqueItems.length === 0) return [];
+    let list = [...uniqueItems];
+    while (list.length < 6) {
+      list = [...list, ...uniqueItems];
+    }
+    return list;
+  }, [uniqueItems]);
+
+  // Keyboard navigation untuk Lightbox Pop-up
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (lightboxIndex === null) return;
       if (e.key === 'Escape') setLightboxIndex(null);
-      if (testimonials.length > 1 && lightboxIndex >= 0) {
+      if (uniqueItems.length > 1) {
         if (e.key === 'ArrowRight') {
           setLightboxIndex((prev) =>
-            prev !== null && prev >= 0 ? (prev + 1) % testimonials.length : null
+            prev !== null ? (prev + 1) % uniqueItems.length : null
           );
         }
         if (e.key === 'ArrowLeft') {
           setLightboxIndex((prev) =>
-            prev !== null && prev >= 0 ? (prev - 1 + testimonials.length) % testimonials.length : null
+            prev !== null ? (prev - 1 + uniqueItems.length) % uniqueItems.length : null
           );
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxIndex, testimonials.length]);
+  }, [lightboxIndex, uniqueItems.length]);
 
-  const handlePrev = () => {
-    if (testimonials.length <= 1) return;
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  };
-
-  const handleNext = () => {
-    if (testimonials.length <= 1) return;
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-  };
-
-  // Touch Swipe Handlers untuk HP
+  // Touch Swipe Handlers untuk Lightbox di Layar HP
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.targetTouches[0].clientX);
   };
@@ -223,20 +230,20 @@ export const TestimonialsSection: React.FC = () => {
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX || testimonials.length <= 1) return;
+    if (touchStartX === null || touchEndX === null || uniqueItems.length <= 1) return;
     const distance = touchStartX - touchEndX;
-    if (distance > 45) {
-      handleNext();
-    } else if (distance < -45) {
-      handlePrev();
+    if (distance > 50 && lightboxIndex !== null) {
+      // Swipe kiri -> Berikutnya
+      setLightboxIndex((lightboxIndex + 1) % uniqueItems.length);
+    } else if (distance < -50 && lightboxIndex !== null) {
+      // Swipe kanan -> Sebelumnya
+      setLightboxIndex((lightboxIndex - 1 + uniqueItems.length) % uniqueItems.length);
     }
     setTouchStartX(null);
     setTouchEndX(null);
   };
 
-  const hasUploadedTestimonials = testimonials.length > 0;
-  const currentTestimonial = hasUploadedTestimonials ? testimonials[currentIndex] || testimonials[0] : null;
-
+  // Google Maps Reviews Pilihan
   const googleReviews = [
     {
       initial: 'M',
@@ -267,6 +274,142 @@ export const TestimonialsSection: React.FC = () => {
     },
   ];
 
+  // Helper render kartu chat WhatsApp interaktif
+  const renderCardContent = (item: DisplayItem) => {
+    if (item.type === 'image' && !brokenImages[item.id]) {
+      return (
+        <div className="w-full h-full relative overflow-hidden bg-slate-900">
+          <img
+            src={item.imageUrl}
+            alt={item.caption}
+            className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            onError={() => setBrokenImages((prev) => ({ ...prev, [item.id]: true }))}
+          />
+          {/* Vignette Gradasi Halus */}
+          <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/25 to-transparent pointer-events-none" />
+          
+          {/* Tombol Perbesar Hover */}
+          <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-xs text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md">
+            <ZoomIn className="w-4 h-4 text-accent" />
+          </div>
+
+          {/* Label Nama / Keterangan di Bagian Bawah */}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2F0B3D]/95 via-[#2F0B3D]/75 to-transparent pt-12 pb-3.5 px-3.5 text-white pointer-events-none">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <div className="w-4 h-4 rounded-full bg-[#25D366] flex items-center justify-center text-white shrink-0 shadow-2xs">
+                <WhatsAppIcon className="w-2.5 h-2.5 text-white" />
+              </div>
+              <span className="text-xs font-bold text-white truncate drop-shadow-sm">
+                {item.caption}
+              </span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0 ml-auto" />
+            </div>
+            <p className="text-[10px] text-white/80 font-medium truncate">{item.subtitle}</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Tampilan Ilustrasi Chat WhatsApp jika tipe sample atau gambar rusak
+    const chatData =
+      item.type === 'sample'
+        ? item.sample
+        : {
+            senderName: item.caption || 'Bunda Bahagia',
+            senderSubtitle: 'Pasien Terverifikasi',
+            avatarEmoji: '🌸',
+            chatText: 'Terima kasih banyak Bu Bidan Indah! Pelayanannya sangat ramah dan adik nyaman sekali.',
+            replyText: 'Sama-sama Bunda.. Senang sekali bisa membantu Si Kecil tercinta 🙏❤️',
+            time: '09:00',
+            serviceTag: 'Layanan Indah Spa Comal',
+            caption: item.caption,
+          };
+
+    return (
+      <div className="w-full h-full bg-[#EFEAE2] flex flex-col justify-between font-sans select-none overflow-hidden relative text-left">
+        {/* WhatsApp Wallpaper Pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(#000 1px, transparent 1px)`,
+            backgroundSize: '14px 14px',
+          }}
+        />
+
+        {/* WhatsApp Header Bar */}
+        <div className="bg-[#075E54] text-white px-3 py-2 flex items-center justify-between shrink-0 shadow-xs relative z-10">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-xs font-bold text-white shadow-2xs">
+              {chatData.avatarEmoji}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-bold leading-tight tracking-tight truncate">
+                  Bidan Indah Comal
+                </span>
+                <ShieldCheck className="w-3 h-3 text-[#25D366] shrink-0" />
+              </div>
+              <span className="text-[8.5px] text-white/80 block leading-tight">online</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-white/80 text-[10px]">
+            <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366]" />
+          </div>
+        </div>
+
+        {/* Chat Messages Body */}
+        <div className="flex-1 p-2.5 overflow-hidden space-y-2 relative z-10 text-[10.5px]">
+          {/* Date Chip */}
+          <div className="flex justify-center my-0.5">
+            <span className="bg-white/90 shadow-2xs text-charcoal-light text-[8px] font-semibold px-2 py-0.5 rounded uppercase tracking-wider">
+              Hari ini
+            </span>
+          </div>
+
+          {/* Bubble 1: Bunda Customer */}
+          <div className="flex justify-end">
+            <div className="bg-[#E7FFDB] text-charcoal rounded-xl rounded-tr-xs p-2 max-w-[90%] shadow-2xs relative">
+              <p className="leading-snug text-[10px] line-clamp-4">{chatData.chatText}</p>
+              <div className="flex items-center justify-end gap-1 mt-0.5 text-[8px] text-charcoal-light">
+                <span>{chatData.time}</span>
+                <span className="text-[#34B7F1] font-bold">✓✓</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bubble 2: Bidan Indah */}
+          <div className="flex justify-start">
+            <div className="bg-white text-charcoal rounded-xl rounded-tl-xs p-2 max-w-[92%] shadow-2xs relative border border-slate-100">
+              <p className="leading-snug text-[9.5px] line-clamp-4">{chatData.replyText}</p>
+              <div className="flex items-center justify-end gap-1 mt-0.5 text-[8px] text-charcoal-light">
+                <span>{chatData.time}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay Label di Bagian Bawah Kartu */}
+        <div className="bg-gradient-to-t from-[#2F0B3D]/95 via-[#2F0B3D]/75 to-transparent pt-8 pb-3 px-3 text-white relative z-10">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <div className="w-3.5 h-3.5 rounded-full bg-[#25D366] flex items-center justify-center text-white shrink-0">
+              <WhatsAppIcon className="w-2 h-2 text-white" />
+            </div>
+            <span className="text-xs font-bold text-white truncate drop-shadow-sm">
+              {chatData.senderName}
+            </span>
+            <CheckCircle2 className="w-3 h-3 text-accent shrink-0 ml-auto" />
+          </div>
+          <p className="text-[9.5px] text-white/80 font-medium truncate">{chatData.serviceTag}</p>
+        </div>
+
+        {/* Hover Zoom Icon */}
+        <div className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-xs text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md z-20">
+          <ZoomIn className="w-3.5 h-3.5 text-accent" />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <section id="ulasan" className="py-20 bg-gradient-to-b from-[#FAF4FD] via-[#FDFBF7] to-cream relative overflow-hidden">
       {/* Decorative Floating Orbs */}
@@ -276,8 +419,8 @@ export const TestimonialsSection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Title with Scroll Reveal */}
         <RevealOnScroll variant="fade-up">
-          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-accent/20 text-accent-dark text-xs font-bold uppercase tracking-wider mb-3 shadow-sm">
+          <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-accent/20 text-accent-dark text-xs font-bold uppercase tracking-wider mb-3 shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-accent" />
               <span>Apa Kata Bunda?</span>
             </div>
@@ -291,169 +434,116 @@ export const TestimonialsSection: React.FC = () => {
         </RevealOnScroll>
 
         {/* ======================================================== */}
-        {/* FITUR 1: GALERI MOCKUP LAYAR HP TESTIMONI WHATSAPP       */}
+        {/* FITUR 1: BARISAN KARTU WHATSAPP SMOOTH HORIZONTAL MARQUEE */}
         {/* ======================================================== */}
-        <RevealOnScroll variant="fade-up" delay={150}>
-          <div className="mb-20 max-w-5xl mx-auto">
-            <div className="bg-gradient-to-br from-white via-cream/40 to-white rounded-3xl p-6 sm:p-10 border border-primary/10 shadow-card relative overflow-hidden">
-              {/* Decorative background glow */}
-              <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-accent/15 rounded-full blur-3xl pointer-events-none" />
-
-              {/* Subheader Gallery */}
-              <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-2 border border-emerald-200">
-                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{hasUploadedTestimonials ? 'Tangkapan Layar Chat WhatsApp Asli' : 'Preview Chat WhatsApp'}</span>
-                </div>
-                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
-                  Bunda Berbagi Kebahagiaan
-                </h3>
-                <p className="text-xs sm:text-sm text-charcoal-light mt-1">
-                  {hasUploadedTestimonials && testimonials.length > 1
-                    ? 'Geser foto untuk melihat bukti kepuasan Bunda lainnya. Klik layar HP untuk membaca chat dalam resolusi penuh.'
-                    : 'Lihat bukti kehangatan pelayanan kami. Klik layar HP untuk membaca obrolan dalam tampilan penuh.'}
-                </p>
+        <RevealOnScroll variant="fade-up" delay={100}>
+          <div className="mb-20">
+            {/* Subheader Gallery */}
+            <div className="text-center max-w-xl mx-auto mb-6 sm:mb-8">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-2 border border-emerald-200">
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>
+                  {testimonials.length > 0
+                    ? 'Tangkapan Layar Chat WhatsApp Asli'
+                    : 'Preview Chat WhatsApp Pelanggan'}
+                </span>
               </div>
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+                Bunda Berbagi Kebahagiaan
+              </h3>
+              <p className="text-xs sm:text-sm text-charcoal-light mt-1">
+                Sentuh atau arahkan kursor untuk menjeda obrolan. Klik kartu untuk membaca tangkapan layar dalam resolusi penuh.
+              </p>
+            </div>
 
-              {/* Smartphone Mockup Container & Navigation */}
-              <div className="relative flex flex-col items-center">
-                <div className="relative w-full max-w-md flex items-center justify-center">
-                  {/* Previous Button (Desktop Side) */}
-                  {testimonials.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={handlePrev}
-                      className="hidden sm:flex absolute -left-6 lg:-left-12 z-20 w-12 h-12 rounded-full bg-white shadow-card border border-primary/10 text-primary hover:bg-primary hover:text-white items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
-                      title="Testimoni Sebelumnya"
-                    >
-                      <ChevronLeft className="w-6 h-6" />
-                    </button>
-                  )}
+            {/* MARQUEE CAROUSEL CONTAINER (Overflow Hidden dengan Edge Vignette) */}
+            <div className="relative w-full overflow-hidden py-4 select-none">
+              {/* Left Gradient Edge Mask (Fade Effect) */}
+              <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-r from-[#FAF4FD] via-[#FAF4FD]/80 to-transparent z-10 pointer-events-none" />
 
-                  {/* Next Button (Desktop Side) */}
-                  {testimonials.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={handleNext}
-                      className="hidden sm:flex absolute -right-6 lg:-right-12 z-20 w-12 h-12 rounded-full bg-white shadow-card border border-primary/10 text-primary hover:bg-primary hover:text-white items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
-                      title="Testimoni Selanjutnya"
-                    >
-                      <ChevronRight className="w-6 h-6" />
-                    </button>
-                  )}
+              {/* Right Gradient Edge Mask (Fade Effect) */}
+              <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-l from-[#FAF4FD] via-[#FAF4FD]/80 to-transparent z-10 pointer-events-none" />
 
-                  {/* SMARTPHONE FRAME MOCKUP */}
-                  <div
-                    className="w-full max-w-[310px] sm:max-w-[340px] bg-slate-950 rounded-[44px] p-3 shadow-2xl border-[6px] border-slate-800 ring-1 ring-white/10 relative transition-transform duration-300 hover:shadow-2xl"
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                  >
-                    {/* Top Dynamic Island / Notch Mockup */}
-                    <div className="w-24 h-5 bg-black rounded-full mx-auto absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none">
-                      <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-700/80 mr-3" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
-                    </div>
-
-                    {/* Phone Screen Area */}
-                    <div
-                      onClick={() => setLightboxIndex(hasUploadedTestimonials ? currentIndex : -1)}
-                      className="rounded-[34px] overflow-hidden bg-slate-900 aspect-[9/17.5] relative cursor-pointer select-none group"
-                      title="Klik untuk memperbesar foto"
-                    >
-                      {/* Display Current Testimonial Screenshot or Aesthetic WhatsApp Illustration */}
-                      {hasUploadedTestimonials && currentTestimonial && !brokenImages[currentTestimonial.id] ? (
-                        <img
-                          key={currentTestimonial.id}
-                          src={currentTestimonial.image_url}
-                          alt={currentTestimonial.caption || 'Testimoni WhatsApp'}
-                          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                          onError={() => setBrokenImages((prev) => ({ ...prev, [currentTestimonial.id]: true }))}
-                        />
-                      ) : (
-                        <WhatsAppPreviewIllustration isPlaceholder={!hasUploadedTestimonials} />
-                      )}
-
-                      {/* Gloss glass reflection overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
-
-                      {/* Hover / Tap Pill: Klik untuk Perbesar */}
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center p-4">
-                        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 text-primary text-xs font-bold shadow-lg backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                          <ZoomIn className="w-4 h-4 text-accent" />
-                          <span>Klik untuk Perbesar</span>
-                        </span>
+              {/* Interactive Marquee Strip */}
+              <div
+                className="flex w-max"
+                onMouseEnter={() => setIsPaused(true)}
+                onMouseLeave={() => setIsPaused(false)}
+                onTouchStart={() => setIsPaused(true)}
+                onTouchEnd={() => setIsPaused(false)}
+              >
+                {/* SET 1: Bergerak ke kiri secara berkelanjutan */}
+                <div
+                  className="flex shrink-0 gap-4 sm:gap-6 animate-marquee-scroll pr-4 sm:pr-6"
+                  style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
+                >
+                  {marqueeCards.map((item, idx) => {
+                    const originalIdx = uniqueItems.findIndex((u) => u.id === item.id);
+                    return (
+                      <div
+                        key={`set1-${item.id}-${idx}`}
+                        onClick={() => setLightboxIndex(originalIdx !== -1 ? originalIdx : 0)}
+                        className="w-[210px] sm:w-[245px] h-[340px] sm:h-[380px] shrink-0 rounded-2xl overflow-hidden bg-white border border-primary/10 shadow-soft hover:shadow-card hover:border-accent/40 transition-all duration-300 hover:-translate-y-1.5 relative group cursor-pointer"
+                        title="Klik untuk melihat resolusi penuh"
+                      >
+                        {renderCardContent(item)}
                       </div>
-                    </div>
-
-                    {/* Home Indicator Bar (iPhone bottom pill) */}
-                    <div className="w-28 h-1 bg-white/30 rounded-full mx-auto mt-2" />
-                  </div>
+                    );
+                  })}
                 </div>
 
-                {/* Mobile Navigation Controls & Caption */}
-                <div className="mt-6 flex flex-col items-center gap-3 w-full max-w-md">
-                  {/* Caption badge */}
-                  {hasUploadedTestimonials && currentTestimonial?.caption ? (
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/15 text-primary text-xs sm:text-sm font-bold text-center">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>{currentTestimonial.caption}</span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold text-center">
-                      <Sparkles className="w-3.5 h-3.5 text-accent" />
-                      <span>{hasUploadedTestimonials ? 'Testimoni WhatsApp' : 'Ilustrasi Percakapan WhatsApp Asli'}</span>
-                    </div>
-                  )}
-
-                  {/* Mobile Prev / Next Arrows */}
-                  {testimonials.length > 1 && (
-                    <div className="flex sm:hidden items-center justify-center gap-4 w-full">
-                      <button
-                        type="button"
-                        onClick={handlePrev}
-                        className="flex items-center gap-1 px-4 py-2 rounded-xl bg-white border border-slate-200 text-primary text-xs font-bold shadow-xs active:scale-95"
+                {/* SET 2: Duplikasi presisi untuk menciptakan seamless loop tanpa patah */}
+                <div
+                  className="flex shrink-0 gap-4 sm:gap-6 animate-marquee-scroll pr-4 sm:pr-6"
+                  style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
+                  aria-hidden="true"
+                >
+                  {marqueeCards.map((item, idx) => {
+                    const originalIdx = uniqueItems.findIndex((u) => u.id === item.id);
+                    return (
+                      <div
+                        key={`set2-${item.id}-${idx}`}
+                        onClick={() => setLightboxIndex(originalIdx !== -1 ? originalIdx : 0)}
+                        className="w-[210px] sm:w-[245px] h-[340px] sm:h-[380px] shrink-0 rounded-2xl overflow-hidden bg-white border border-primary/10 shadow-soft hover:shadow-card hover:border-accent/40 transition-all duration-300 hover:-translate-y-1.5 relative group cursor-pointer"
+                        title="Klik untuk melihat resolusi penuh"
                       >
-                        <ChevronLeft className="w-4 h-4" />
-                        <span>Sebelumnya</span>
-                      </button>
-
-                      <span className="text-xs font-bold text-charcoal-light">
-                        {currentIndex + 1} / {testimonials.length}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={handleNext}
-                        className="flex items-center gap-1 px-4 py-2 rounded-xl bg-white border border-slate-200 text-primary text-xs font-bold shadow-xs active:scale-95"
-                      >
-                        <span>Berikutnya</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Dot indicators & Thumbnail Selector */}
-                  {testimonials.length > 1 && (
-                    <div className="flex items-center gap-2 pt-2">
-                      {testimonials.map((t, idx) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setCurrentIndex(idx)}
-                          className={`transition-all duration-300 rounded-full ${
-                            currentIndex === idx
-                              ? 'w-8 h-2.5 bg-accent'
-                              : 'w-2.5 h-2.5 bg-slate-300 hover:bg-slate-400'
-                          }`}
-                          title={`Lihat Testimoni ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  )}
+                        {renderCardContent(item)}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            </div>
+
+            {/* Kontrol Interaksi & Indikator Status Marquee */}
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-4 text-xs text-charcoal-light">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-primary/10 shadow-2xs backdrop-blur-xs">
+                <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
+                <span>
+                  {isPaused
+                    ? 'Animasi dijeda • Klik foto untuk memperbesar'
+                    : 'Arahkan kursor atau sentuh layar untuk menjeda'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPaused(!isPaused)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-primary/15 text-primary text-xs font-bold hover:bg-primary/5 shadow-2xs transition-all active:scale-95"
+                title={isPaused ? 'Lanjutkan Animasi' : 'Jeda Animasi'}
+              >
+                {isPaused ? (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-primary text-primary" />
+                    <span>Lanjutkan Bergerak</span>
+                  </>
+                ) : (
+                  <>
+                    <Pause className="w-3.5 h-3.5 fill-primary text-primary" />
+                    <span>Jeda Sementara</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </RevealOnScroll>
@@ -568,12 +658,15 @@ export const TestimonialsSection: React.FC = () => {
       </div>
 
       {/* ======================================================== */}
-      {/* MODAL LIGHTBOX: KLIK UNTUK PERBESAR RESOLUSI PENUH       */}
+      {/* MODAL LIGHTBOX: POP-UP RESOLUSI PENUH                    */}
       {/* ======================================================== */}
-      {lightboxIndex !== null && (
+      {lightboxIndex !== null && uniqueItems[lightboxIndex] && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fade-in"
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fade-in select-none"
           onClick={() => setLightboxIndex(null)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {/* Lightbox Modal Box */}
           <div
@@ -583,15 +676,11 @@ export const TestimonialsSection: React.FC = () => {
             {/* Top Toolbar (Counter, Caption, Close Button) */}
             <div className="w-full flex items-center justify-between pb-3 text-white">
               <span className="text-xs font-semibold bg-white/20 px-3 py-1 rounded-full">
-                {lightboxIndex >= 0 && testimonials[lightboxIndex]
-                  ? `${lightboxIndex + 1} dari ${testimonials.length}`
-                  : 'Preview Percakapan'}
+                {`${lightboxIndex + 1} dari ${uniqueItems.length}`}
               </span>
 
-              <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[200px] sm:max-w-xs">
-                {lightboxIndex >= 0 && testimonials[lightboxIndex]
-                  ? testimonials[lightboxIndex].caption || 'Testimoni WhatsApp'
-                  : 'Obrolan Asli Pelanggan'}
+              <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[200px] sm:max-w-xs text-center">
+                {uniqueItems[lightboxIndex].caption}
               </span>
 
               <button
@@ -605,56 +694,52 @@ export const TestimonialsSection: React.FC = () => {
             </div>
 
             {/* Main Lightbox Content with Left & Right Arrow controls */}
-            <div className="relative w-full flex items-center justify-center">
+            <div className="relative w-full flex items-center justify-center my-auto">
               {/* Previous Button inside Lightbox */}
-              {testimonials.length > 1 && lightboxIndex >= 0 && (
+              {uniqueItems.length > 1 && (
                 <button
                   type="button"
                   onClick={() =>
                     setLightboxIndex(
-                      (lightboxIndex - 1 + testimonials.length) % testimonials.length
+                      (lightboxIndex - 1 + uniqueItems.length) % uniqueItems.length
                     )
                   }
-                  className="absolute left-2 sm:-left-12 z-10 w-10 h-10 rounded-full bg-black/60 hover:bg-white text-white hover:text-black border border-white/20 flex items-center justify-center transition-colors"
-                  title="Foto Sebelumnya"
+                  className="absolute left-2 sm:-left-12 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-white text-white hover:text-black border border-white/20 flex items-center justify-center transition-all shadow-lg active:scale-95"
+                  title="Foto Sebelumnya (Panah Kiri)"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
               )}
 
-              {lightboxIndex >= 0 && testimonials[lightboxIndex] ? (
-                brokenImages[testimonials[lightboxIndex].id] ? (
-                  <div className="w-[300px] sm:w-[340px] aspect-[9/17.5] rounded-3xl overflow-hidden shadow-2xl border border-white/20">
-                    <WhatsAppPreviewIllustration />
-                  </div>
-                ) : (
-                  <img
-                    src={testimonials[lightboxIndex].image_url}
-                    alt={testimonials[lightboxIndex].caption || 'Screenshot WhatsApp'}
-                    className="max-h-[80vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/10"
-                    onError={() =>
-                      setBrokenImages((prev) => ({
-                        ...prev,
-                        [testimonials[lightboxIndex].id]: true,
-                      }))
-                    }
-                  />
-                )
+              {/* Tampilan Konten Resolusi Penuh */}
+              {uniqueItems[lightboxIndex].type === 'image' &&
+              !brokenImages[uniqueItems[lightboxIndex].id] ? (
+                <img
+                  src={(uniqueItems[lightboxIndex] as any).imageUrl}
+                  alt={uniqueItems[lightboxIndex].caption}
+                  className="max-h-[80vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/10"
+                  onError={() =>
+                    setBrokenImages((prev) => ({
+                      ...prev,
+                      [uniqueItems[lightboxIndex].id]: true,
+                    }))
+                  }
+                />
               ) : (
                 <div className="w-[300px] sm:w-[340px] aspect-[9/17.5] rounded-3xl overflow-hidden shadow-2xl border border-white/20">
-                  <WhatsAppPreviewIllustration isPlaceholder={true} />
+                  {renderCardContent(uniqueItems[lightboxIndex])}
                 </div>
               )}
 
               {/* Next Button inside Lightbox */}
-              {testimonials.length > 1 && lightboxIndex >= 0 && (
+              {uniqueItems.length > 1 && (
                 <button
                   type="button"
                   onClick={() =>
-                    setLightboxIndex((lightboxIndex + 1) % testimonials.length)
+                    setLightboxIndex((lightboxIndex + 1) % uniqueItems.length)
                   }
-                  className="absolute right-2 sm:-right-12 z-10 w-10 h-10 rounded-full bg-black/60 hover:bg-white text-white hover:text-black border border-white/20 flex items-center justify-center transition-colors"
-                  title="Foto Berikutnya"
+                  className="absolute right-2 sm:-right-12 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-white text-white hover:text-black border border-white/20 flex items-center justify-center transition-all shadow-lg active:scale-95"
+                  title="Foto Berikutnya (Panah Kanan)"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </button>
@@ -663,9 +748,9 @@ export const TestimonialsSection: React.FC = () => {
 
             {/* Bottom helper info */}
             <p className="text-[11px] text-white/70 mt-3 text-center">
-              {testimonials.length > 1
-                ? 'Gunakan tombol panah kiri / kanan keyboard atau geser untuk beralih foto. Tekan ESC untuk menutup.'
-                : 'Tekan ESC atau klik area luar untuk menutup.'}
+              {uniqueItems.length > 1
+                ? 'Gunakan tombol panah keyboard atau geser layar untuk beralih foto • Tekan ESC untuk menutup'
+                : 'Tekan ESC atau klik area luar untuk menutup'}
             </p>
           </div>
         </div>

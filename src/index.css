@@ -120,6 +120,33 @@
   animation: bounceIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Infinite Horizontal Marquee for WhatsApp Testimonial Cards */
+@keyframes marqueeScroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee-scroll {
+  animation: marqueeScroll 42s linear infinite;
+  will-change: transform;
+}
+
+@media (max-width: 640px) {
+  .animate-marquee-scroll {
+    animation-duration: 28s;
+  }
+}
+
+.animate-marquee-scroll:hover,
+.animate-marquee-scroll:focus-within,
+.animate-marquee-scroll:active {
+  animation-play-state: paused;
+}
+
 /* Shimmer Highlight Effect on CTA Buttons */
 .btn-shimmer {
   position: relative;
@@ -162,7 +189,8 @@
   .animate-float-slow-1,
   .animate-float-slow-2,
   .animate-float-badge,
-  .animate-bounce-in {
+  .animate-bounce-in,
+  .animate-marquee-scroll {
     animation: none !important;
   }
 }
