@@ -302,13 +302,13 @@ export async function hashPin(pin: string): Promise<string> {
 
 /**
  * Membaca hash PIN aktif dengan urutan prioritas:
- * 1. clinic_settings (Supabase) key: 'admin_pin_hash'
- * 2. indah_spa_custom_pin_hash (localStorage)
+ * 1. clinic_settings (Supabase) key: 'admin_pin_hash' jika Supabase terhubung & online
+ * 2. indah_spa_custom_pin_hash (localStorage) jika Supabase tidak dikonfigurasi atau sedang offline
  * 3. VITE_ADMIN_PIN_HASH (Environment Variable)
  * 4. DEFAULT_ADMIN_PIN_HASH (Hash default untuk '123456')
  */
 export async function getActivePinHash(): Promise<string> {
-  if (supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
         .from('clinic_settings')
@@ -317,13 +317,20 @@ export async function getActivePinHash(): Promise<string> {
         .maybeSingle();
 
       if (!error && data?.value && data.value.trim()) {
-        return data.value.trim().toLowerCase();
+        const cloudHash = data.value.trim().toLowerCase();
+        // Sinkronkan juga cache localStorage untuk fallback offline
+        localStorage.setItem(STORAGE_KEY_CUSTOM_PIN_HASH, cloudHash);
+        return cloudHash;
+      }
+      if (error) {
+        console.warn('Gagal membaca PIN hash dari Supabase clinic_settings (fallback ke lokal):', error);
       }
     } catch (e) {
-      console.warn('Gagal membaca PIN hash dari Supabase clinic_settings:', e);
+      console.warn('Supabase offline saat membaca clinic_settings (fallback ke lokal):', e);
     }
   }
 
+  // Hanya gunakan localStorage atau VITE_ADMIN_PIN_HASH jika Supabase tidak dikonfigurasi atau sedang offline
   const customLocalHash = localStorage.getItem(STORAGE_KEY_CUSTOM_PIN_HASH);
   if (customLocalHash && customLocalHash.trim()) {
     return customLocalHash.trim().toLowerCase();
@@ -338,7 +345,7 @@ export async function getActivePinHash(): Promise<string> {
 }
 
 /**
- * Menyimpan PIN baru dalam bentuk hash SHA-256 ke localStorage dan tabel clinic_settings Supabase
+ * Menyimpan PIN baru dalam bentuk hash SHA-256 ke tabel clinic_settings Supabase dan localStorage
  */
 export async function saveAdminPinHash(
   newPin: string,
@@ -346,28 +353,23 @@ export async function saveAdminPinHash(
 ): Promise<{ success: boolean; hash: string }> {
   const newPinHash = await hashPin(newPin);
 
-  // 1. Simpan hash ke localStorage
-  localStorage.setItem(STORAGE_KEY_CUSTOM_PIN_HASH, newPinHash);
+  // 1. Saat Supabase terhubung (isSupabaseConfigured), jalankan upsert ke clinic_settings terlebih dahulu
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase
+      .from('clinic_settings')
+      .upsert(
+        {
+          key: 'admin_pin_hash',
+          value: newPinHash,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'key' }
+      );
 
-  // 2. Simpan hash ke tabel clinic_settings Supabase jika terhubung
-  if (supabase) {
-    try {
-      const { error } = await supabase
-        .from('clinic_settings')
-        .upsert(
-          {
-            key: 'admin_pin_hash',
-            value: newPinHash,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'key' }
-        );
-
-      if (error) {
-        console.warn('Gagal upsert clinic_settings Supabase:', error);
-      }
-    } catch (e) {
-      console.warn('Error saat menyimpan ke clinic_settings Supabase:', e);
+    // Jangan tangkap/sembunyikan error secara diam-diam: lempar error tersebut agar UI menampilkan pesan gagal
+    if (error) {
+      console.error('Gagal upsert clinic_settings Supabase:', error);
+      throw error;
     }
 
     // Sinkronkan juga ke RPC admin_update_setting jika tersedia
@@ -383,6 +385,9 @@ export async function saveAdminPinHash(
       }
     }
   }
+
+  // 2. Setelah upsert sukses (atau jika Supabase tidak dikonfigurasi), simpan juga ke localStorage
+  localStorage.setItem(STORAGE_KEY_CUSTOM_PIN_HASH, newPinHash);
 
   // 3. Update session storage aktif
   sessionStorage.setItem('imb_admin_pin', newPin);

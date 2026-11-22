@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Lock, Delete, ShieldCheck, Home, AlertCircle, Clock } from 'lucide-react';
-import { getLocalSettings, getActivePinHash, hashPin, DEFAULT_ADMIN_PIN_HASH } from '../../lib/supabase';
+import {
+  getLocalSettings,
+  getActivePinHash,
+  hashPin,
+  DEFAULT_ADMIN_PIN_HASH,
+  isSupabaseConfigured,
+} from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 
 interface AdminLoginProps {
@@ -116,19 +122,23 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ mode, onSuccess, onBackT
       // 1. Hitung hash SHA-256 dari input PIN
       const inputHash = await calculateSha256(pinToVerify);
 
-      // 2. Ambil hash target dengan memprioritaskan clinic_settings (Supabase) /
-      //    indah_spa_custom_pin_hash (localStorage) terlebih dahulu sebelum jatuh ke
-      //    import.meta.env.VITE_ADMIN_PIN_HASH atau hash default
+      // 2. Ambil hash target terbaru dari Supabase (clinic_settings dengan .maybeSingle())
+      //    terlebih dahulu sebelum membandingkan dengan hash input PIN
       const expectedHash = await getActivePinHash();
 
-      // Fallback hash jika ada perubahan PIN lama tersimpan di localStorage pengaturan lokal
-      const settings = getLocalSettings();
-      let localSettingHash = '';
-      if (!import.meta.env.VITE_ADMIN_PIN_HASH && !localStorage.getItem('indah_spa_custom_pin_hash') && settings.admin_pin) {
-        localSettingHash = await calculateSha256(settings.admin_pin);
-      }
+      // Bandingkan hash input dengan expectedHash dari cloud / fallback
+      let isValid = inputHash === expectedHash;
 
-      const isValid = (inputHash === expectedHash) || (Boolean(localSettingHash) && inputHash === localSettingHash);
+      // Hanya gunakan fallback localStorage pengaturan lama jika Supabase tidak dikonfigurasi atau sedang offline
+      if (!isValid && !isSupabaseConfigured) {
+        const settings = getLocalSettings();
+        if (!localStorage.getItem('indah_spa_custom_pin_hash') && settings.admin_pin) {
+          const localSettingHash = await calculateSha256(settings.admin_pin);
+          if (inputHash === localSettingHash) {
+            isValid = true;
+          }
+        }
+      }
 
       if (isValid) {
         // Reset counter kegagalan saat PIN benar
@@ -168,6 +178,23 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ mode, onSuccess, onBackT
       setIsVerifying(false);
     }
   };
+
+  // Dukungan input keyboard fisik untuk desktop / laptop
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isLocked || isVerifying) return;
+      if (/^[0-9]$/.test(e.key)) {
+        handleDigitClick(e.key);
+      } else if (e.key === 'Backspace') {
+        handleDelete();
+      } else if (e.key === 'Escape') {
+        handleClear();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLocked, isVerifying, pin]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-x-hidden bg-gradient-to-br from-[#2F0B3D] via-[#5B2C6F] to-[#1F2937]">

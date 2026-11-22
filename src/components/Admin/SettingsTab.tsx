@@ -94,18 +94,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ adminPin }) => {
         return;
       }
 
-      // 6. Simpan sebagai Hash SHA-256 ke localStorage (indah_spa_custom_pin_hash) serta tabel clinic_settings (Supabase)
+      // 6. Simpan sebagai Hash SHA-256 ke tabel clinic_settings (Supabase) serta localStorage (indah_spa_custom_pin_hash)
       await saveAdminPinHash(newPin, oldPin);
 
-      // Bersihkan input
+      // Bersihkan input setelah berhasil
       setOldPin('');
       setNewPin('');
       setConfirmPin('');
 
       success('PIN Keamanan Admin berhasil diperbarui dengan proteksi hash SHA-256! Gunakan PIN baru ini untuk login berikutnya.');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Gagal memperbarui PIN keamanan:', err);
-      error('Gagal memperbarui PIN keamanan.');
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : 'Terjadi kesalahan saat menyimpan ke database Supabase.';
+      error(`Gagal memperbarui PIN keamanan: ${errorMessage}`);
     } finally {
       setIsSavingPin(false);
     }

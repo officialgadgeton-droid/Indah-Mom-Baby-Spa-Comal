@@ -218,8 +218,13 @@ CREATE POLICY "Authenticated users can manage settings"
     WITH CHECK (true);
 
 -- 5. Testimonials:
--- - Seluruh operasi SELECT, INSERT, UPDATE, DELETE HANYA diizinkan untuk user authenticated
+-- - Publik hanya bisa melihat testimoni yang aktif
+-- - Operasi kelola (INSERT/UPDATE/DELETE) untuk user authenticated atau lewat RPC admin
 DROP POLICY IF EXISTS "Public can view active testimonials" ON public.testimonials;
+CREATE POLICY "Public can view active testimonials"
+    ON public.testimonials FOR SELECT
+    USING (is_active = true);
+
 DROP POLICY IF EXISTS "Allow anon insert testimonials" ON public.testimonials;
 DROP POLICY IF EXISTS "Allow anon update testimonials" ON public.testimonials;
 DROP POLICY IF EXISTS "Allow anon delete testimonials" ON public.testimonials;
@@ -388,10 +393,10 @@ CREATE OR REPLACE FUNCTION public.admin_create_manual_booking(
     p_service_id uuid,
     p_service_name text,
     p_service_price numeric DEFAULT 0,
-    p_booking_date date,
-    p_booking_time text,
-    p_mom_name text,
-    p_whatsapp_number text,
+    p_booking_date date DEFAULT NULL,
+    p_booking_time text DEFAULT NULL,
+    p_mom_name text DEFAULT NULL,
+    p_whatsapp_number text DEFAULT NULL,
     p_child_name text DEFAULT NULL,
     p_child_age text DEFAULT NULL,
     p_address text DEFAULT NULL,
@@ -530,6 +535,14 @@ BEGIN
     SET value = EXCLUDED.value,
         updated_at = EXCLUDED.updated_at;
 
+    IF p_key = 'admin_pin_hash' THEN
+        INSERT INTO public.clinic_settings (key, value, updated_at)
+        VALUES (p_key, p_value, timezone('utc'::text, now()))
+        ON CONFLICT (key) DO UPDATE
+        SET value = EXCLUDED.value,
+            updated_at = EXCLUDED.updated_at;
+    END IF;
+
     RETURN true;
 END;
 $$;
@@ -596,30 +609,27 @@ GRANT EXECUTE ON FUNCTION public.admin_manage_blocked_slot(text, text, uuid, dat
 GRANT EXECUTE ON FUNCTION public.admin_update_setting(text, text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_manage_testimonial(text, text, uuid, text, text, boolean) TO anon, authenticated;
 
+-- Berikan hak akses tabel clinic_settings untuk pengelolaan PIN hash admin
+GRANT ALL ON TABLE public.clinic_settings TO anon, authenticated;
+
 -- ====================================================================
 -- KONFIGURASI SUPABASE STORAGE (BUCKET: testimonials)
 -- ====================================================================
--- Panduan pembuatan Storage Bucket untuk upload tangkapan layar testimoni:
--- 1. Buka Supabase Dashboard > Menu "Storage" > Klik tombol "New bucket"
--- 2. Bucket name: testimonials
--- 3. Public bucket: AKTIFKAN / ON (Wajib aktif agar foto dapat diakses publik)
--- 4. Klik "Save bucket"
---
--- Atau jalankan query SQL berikut di Supabase SQL Editor:
--- INSERT INTO storage.buckets (id, name, public)
--- VALUES ('testimonials', 'testimonials', true)
--- ON CONFLICT (id) DO UPDATE SET public = true;
---
--- Storage Policies (Akses Publik & Admin Upload):
--- CREATE POLICY "Public Access Testimonials"
--- ON storage.objects FOR SELECT
--- USING (bucket_id = 'testimonials');
---
--- CREATE POLICY "Allow Upload Testimonials"
--- ON storage.objects FOR INSERT
--- WITH CHECK (bucket_id = 'testimonials');
---
--- CREATE POLICY "Allow Delete Testimonials"
--- ON storage.objects FOR DELETE
--- USING (bucket_id = 'testimonials');
--- ====================================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('testimonials', 'testimonials', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Public Access Testimonials" ON storage.objects;
+CREATE POLICY "Public Access Testimonials"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'testimonials');
+
+DROP POLICY IF EXISTS "Allow Upload Testimonials" ON storage.objects;
+CREATE POLICY "Allow Upload Testimonials"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'testimonials');
+
+DROP POLICY IF EXISTS "Allow Delete Testimonials" ON storage.objects;
+CREATE POLICY "Allow Delete Testimonials"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'testimonials');
