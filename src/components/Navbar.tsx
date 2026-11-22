@@ -37,41 +37,41 @@ export const Navbar: React.FC<NavbarProps> = ({
           : 'bg-cream/90 backdrop-blur-sm py-4 border-b border-primary/5'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4">
-          {/* Logo & Brand Name (Single Line, No Wrap) */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-2 md:gap-4">
+          {/* Logo & Brand Name */}
           <a
             href="/"
             onClick={(e) => {
               e.preventDefault();
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="flex items-center gap-3 group shrink-0 whitespace-nowrap"
+            className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-1 md:flex-initial"
           >
-            <div className="w-11 h-11 shrink-0 rounded-full overflow-hidden bg-white shadow-md border-2 border-accent/40 p-0.5 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-full overflow-hidden bg-white shadow-md border-2 border-accent/40 p-0.5 flex items-center justify-center group-hover:scale-105 transition-transform">
               <img
                 src="/logo.png"
                 alt="Logo Indah Mom & Baby Spa Comal"
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="whitespace-nowrap">
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <span className="font-serif font-bold text-lg sm:text-xl text-primary tracking-tight leading-tight whitespace-nowrap">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-serif font-bold text-sm sm:text-lg md:text-xl text-primary tracking-tight leading-tight truncate sm:whitespace-nowrap">
                   Indah Mom & Baby Spa
                 </span>
-                <span className="text-[10px] uppercase font-bold tracking-widest bg-accent/20 text-accent-dark px-1.5 py-0.5 rounded whitespace-nowrap">
+                <span className="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-widest bg-accent/20 text-accent-dark px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">
                   Comal
                 </span>
               </div>
-              <p className="text-xs text-charcoal-light font-medium hidden sm:block whitespace-nowrap">
+              <p className="text-xs text-charcoal-light font-medium hidden sm:block whitespace-nowrap truncate">
                 Perawatan Lembut Bunda & Buah Hati
               </p>
             </div>
           </a>
 
-          {/* Desktop Navigation (Concise 1-word labels, 1 line) */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 whitespace-nowrap">
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-5 lg:gap-8 whitespace-nowrap">
             <button
               onClick={() => handleScrollTo('layanan')}
               className="text-sm font-semibold text-charcoal hover:text-primary transition-colors whitespace-nowrap"
@@ -104,8 +104,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Right Action CTA (Single Primary Button, 1 line) */}
-          <div className="hidden sm:flex items-center shrink-0">
+          {/* Desktop Right Action CTA */}
+          <div className="hidden md:flex items-center shrink-0">
             <button
               onClick={() => {
                 if (onSelectBooking) onSelectBooking();
@@ -118,22 +118,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center gap-2 lg:hidden">
+          {/* Mobile Action Buttons (< md) */}
+          <div className="flex items-center gap-2 md:hidden shrink-0">
             <button
               onClick={() => {
                 if (onSelectBooking) onSelectBooking();
                 handleScrollTo('reservasi');
               }}
-              className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-white font-bold text-xs shadow-sm whitespace-nowrap"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-accent hover:bg-accent-dark text-white font-bold shadow-sm shrink-0 whitespace-nowrap transition-colors"
             >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Reservasi</span>
+              <Calendar className="w-3.5 h-3.5 shrink-0" />
+              <span>Booking</span>
             </button>
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-charcoal hover:text-primary hover:bg-primary/5 focus:outline-none"
+              className="p-1.5 rounded-lg text-charcoal hover:text-primary hover:bg-primary/5 focus:outline-none shrink-0"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -144,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-3 shadow-xl animate-bounce-in">
+        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-3 shadow-xl animate-bounce-in">
           <div className="grid gap-2">
             <button
               onClick={() => handleScrollTo('layanan')}
