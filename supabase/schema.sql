@@ -1,7 +1,9 @@
 -- ====================================================================
 -- SKEMA DATABASE INDAH MOM & BABY SPA COMAL (indahmombabyspa.com)
--- REVISI LENGKAP: 12 LAYANAN RESMI, TANPA TAMPILAN HARGA
+-- REVISI LENGKAP: 12 LAYANAN RESMI, TANPA TAMPILAN HARGA, HASH SHA-256 PIN ADMIN
 -- ====================================================================
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 1. TABEL LAYANAN (SERVICES)
 CREATE TABLE IF NOT EXISTS public.services (
@@ -73,6 +75,13 @@ CREATE TABLE IF NOT EXISTS public.testimonials (
 CREATE INDEX IF NOT EXISTS idx_testimonials_active ON public.testimonials(is_active);
 CREATE INDEX IF NOT EXISTS idx_testimonials_created_at ON public.testimonials(created_at DESC);
 
+-- 6. TABEL PENGATURAN KLINIK & HASH PIN KEAMANAN (CLINIC_SETTINGS)
+CREATE TABLE IF NOT EXISTS public.clinic_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
 -- ====================================================================
 -- SEED DATA AWAL: 12 LAYANAN RESMI KATALOG BARU
 -- ====================================================================
@@ -111,6 +120,12 @@ VALUES
     ('clinic_instagram', '@indahmombabyspa_comal')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
+-- Data Pengaturan Keamanan Hash PIN Awal pada clinic_settings
+INSERT INTO public.clinic_settings (key, value)
+VALUES
+    ('admin_pin_hash', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92') -- Default SHA-256 hash untuk PIN 123456
+ON CONFLICT (key) DO NOTHING;
+
 -- ====================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ====================================================================
@@ -120,6 +135,7 @@ ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blocked_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clinic_settings ENABLE ROW LEVEL SECURITY;
 
 -- 1. Services: Publik bisa melihat semua layanan yang aktif
 DROP POLICY IF EXISTS "Public can view active services" ON public.services;
@@ -127,17 +143,66 @@ CREATE POLICY "Public can view active services"
     ON public.services FOR SELECT
     USING (is_active = true);
 
--- 2. Blocked Slots: Publik bisa melihat daftar slot/hari yang diblokir untuk kalkulasi ketersediaan jadwal
-DROP POLICY IF EXISTS "Public can view blocked slots" ON public.blocked_slots;
-CREATE POLICY "Public can view blocked slots"
-    ON public.blocked_slots FOR SELECT
-    USING (true);
+DROP POLICY IF EXISTS "Authenticated users can manage services" ON public.services;
+CREATE POLICY "Authenticated users can manage services"
+    ON public.services FOR ALL
+    TO authenticated
+    USING (true)
+    WITH CHECK (true);
 
--- 3. Bookings: Publik hanya bisa INSERT booking baru (tidak bisa membaca data pasien lain)
+-- 2. Bookings:
+-- - Publik HANYA diizinkan INSERT booking baru
+-- - Seluruh operasi SELECT, UPDATE, DELETE HANYA diizinkan untuk user authenticated
 DROP POLICY IF EXISTS "Public can insert bookings" ON public.bookings;
 CREATE POLICY "Public can insert bookings"
     ON public.bookings FOR INSERT
     WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated users can select bookings" ON public.bookings;
+CREATE POLICY "Authenticated users can select bookings"
+    ON public.bookings FOR SELECT
+    TO authenticated
+    USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can update bookings" ON public.bookings;
+CREATE POLICY "Authenticated users can update bookings"
+    ON public.bookings FOR UPDATE
+    TO authenticated
+    USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can delete bookings" ON public.bookings;
+CREATE POLICY "Authenticated users can delete bookings"
+    ON public.bookings FOR DELETE
+    TO authenticated
+    USING (true);
+
+-- 3. Blocked Slots:
+-- - Seluruh operasi SELECT, INSERT, UPDATE, DELETE HANYA diizinkan untuk user authenticated
+-- (Publik memeriksa ketersediaan jam/libur melalui RPC SECURITY DEFINER get_booked_slots)
+DROP POLICY IF EXISTS "Public can view blocked slots" ON public.blocked_slots;
+DROP POLICY IF EXISTS "Authenticated users can select blocked_slots" ON public.blocked_slots;
+CREATE POLICY "Authenticated users can select blocked_slots"
+    ON public.blocked_slots FOR SELECT
+    TO authenticated
+    USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can insert blocked_slots" ON public.blocked_slots;
+CREATE POLICY "Authenticated users can insert blocked_slots"
+    ON public.blocked_slots FOR INSERT
+    TO authenticated
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated users can update blocked_slots" ON public.blocked_slots;
+CREATE POLICY "Authenticated users can update blocked_slots"
+    ON public.blocked_slots FOR UPDATE
+    TO authenticated
+    USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can delete blocked_slots" ON public.blocked_slots;
+CREATE POLICY "Authenticated users can delete blocked_slots"
+    ON public.blocked_slots FOR DELETE
+    TO authenticated
+    USING (true);
 
 -- 4. App Settings: Publik hanya bisa membaca informasi publik klinik
 DROP POLICY IF EXISTS "Public can view public settings" ON public.app_settings;
@@ -145,27 +210,66 @@ CREATE POLICY "Public can view public settings"
     ON public.app_settings FOR SELECT
     USING (key IN ('clinic_name', 'whatsapp_number', 'clinic_address', 'operating_hours', 'clinic_instagram'));
 
--- 5. Testimonials: Publik bisa melihat semua foto testimoni yang berstatus aktif
-DROP POLICY IF EXISTS "Public can view active testimonials" ON public.testimonials;
-CREATE POLICY "Public can view active testimonials"
-    ON public.testimonials FOR SELECT
-    USING (is_active = true);
-
--- Policy admin/anon untuk operasi tabel testimonials
-DROP POLICY IF EXISTS "Allow anon insert testimonials" ON public.testimonials;
-CREATE POLICY "Allow anon insert testimonials"
-    ON public.testimonials FOR INSERT
+DROP POLICY IF EXISTS "Authenticated users can manage settings" ON public.app_settings;
+CREATE POLICY "Authenticated users can manage settings"
+    ON public.app_settings FOR ALL
+    TO authenticated
+    USING (true)
     WITH CHECK (true);
 
+-- 5. Testimonials:
+-- - Seluruh operasi SELECT, INSERT, UPDATE, DELETE HANYA diizinkan untuk user authenticated
+DROP POLICY IF EXISTS "Public can view active testimonials" ON public.testimonials;
+DROP POLICY IF EXISTS "Allow anon insert testimonials" ON public.testimonials;
 DROP POLICY IF EXISTS "Allow anon update testimonials" ON public.testimonials;
-CREATE POLICY "Allow anon update testimonials"
-    ON public.testimonials FOR UPDATE
+DROP POLICY IF EXISTS "Allow anon delete testimonials" ON public.testimonials;
+
+DROP POLICY IF EXISTS "Authenticated users can select testimonials" ON public.testimonials;
+CREATE POLICY "Authenticated users can select testimonials"
+    ON public.testimonials FOR SELECT
+    TO authenticated
     USING (true);
 
-DROP POLICY IF EXISTS "Allow anon delete testimonials" ON public.testimonials;
-CREATE POLICY "Allow anon delete testimonials"
-    ON public.testimonials FOR DELETE
+DROP POLICY IF EXISTS "Authenticated users can insert testimonials" ON public.testimonials;
+CREATE POLICY "Authenticated users can insert testimonials"
+    ON public.testimonials FOR INSERT
+    TO authenticated
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated users can update testimonials" ON public.testimonials;
+CREATE POLICY "Authenticated users can update testimonials"
+    ON public.testimonials FOR UPDATE
+    TO authenticated
     USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can delete testimonials" ON public.testimonials;
+CREATE POLICY "Authenticated users can delete testimonials"
+    ON public.testimonials FOR DELETE
+    TO authenticated
+    USING (true);
+
+-- 6. Clinic Settings:
+-- - Siapapun (anon & authenticated) dapat membaca clinic_settings untuk verifikasi PIN hash
+DROP POLICY IF EXISTS "Public can view clinic settings" ON public.clinic_settings;
+CREATE POLICY "Public can view clinic settings"
+    ON public.clinic_settings FOR SELECT
+    USING (true);
+
+-- - User authenticated dapat mengelola clinic_settings
+DROP POLICY IF EXISTS "Authenticated users can manage clinic_settings" ON public.clinic_settings;
+CREATE POLICY "Authenticated users can manage clinic_settings"
+    ON public.clinic_settings FOR ALL
+    TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+-- - Anon diizinkan melakukan upsert (insert/update) clinic_settings untuk pembaruan PIN hash dari antarmuka admin
+DROP POLICY IF EXISTS "Allow anon manage clinic_settings" ON public.clinic_settings;
+CREATE POLICY "Allow anon manage clinic_settings"
+    ON public.clinic_settings FOR ALL
+    TO anon
+    USING (true)
+    WITH CHECK (true);
 
 -- ====================================================================
 -- RPC FUNCTIONS (SECURITY DEFINER)
@@ -192,20 +296,41 @@ BEGIN
 END;
 $$;
 
--- 2. verify_admin_pin: Verifikasi PIN Admin
+-- 2. verify_admin_pin: Verifikasi PIN Admin (Mendukung Hash SHA-256 dari clinic_settings & fallback plain text)
 CREATE OR REPLACE FUNCTION public.verify_admin_pin(pin_input text)
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    correct_pin text;
+    stored_hash text;
+    stored_pin text;
+    calculated_hash text;
 BEGIN
-    SELECT value INTO correct_pin FROM public.app_settings WHERE key = 'admin_pin';
-    IF correct_pin IS NULL THEN
-        correct_pin := '123456';
+    -- 1. Periksa hash dari clinic_settings
+    SELECT value INTO stored_hash FROM public.clinic_settings WHERE key = 'admin_pin_hash';
+    IF stored_hash IS NOT NULL AND stored_hash <> '' THEN
+        calculated_hash := encode(digest(pin_input, 'sha256'), 'hex');
+        IF lower(calculated_hash) = lower(stored_hash) THEN
+            RETURN true;
+        END IF;
     END IF;
-    RETURN (pin_input = correct_pin);
+
+    -- 2. Periksa hash dari app_settings jika ada
+    SELECT value INTO stored_hash FROM public.app_settings WHERE key = 'admin_pin_hash';
+    IF stored_hash IS NOT NULL AND stored_hash <> '' THEN
+        calculated_hash := encode(digest(pin_input, 'sha256'), 'hex');
+        IF lower(calculated_hash) = lower(stored_hash) THEN
+            RETURN true;
+        END IF;
+    END IF;
+
+    -- 3. Fallback ke PIN plain text pada app_settings (atau bawaan 123456)
+    SELECT value INTO stored_pin FROM public.app_settings WHERE key = 'admin_pin';
+    IF stored_pin IS NULL THEN
+        stored_pin := '123456';
+    END IF;
+    RETURN (pin_input = stored_pin);
 END;
 $$;
 

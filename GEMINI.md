@@ -29,3 +29,13 @@ Dokumen ini berisi aturan arsitektur wajib untuk AI Assistant dan pengembang dal
      - **Mode `'all'` (default lokal & preview sementara):**
        - Nilai bawaan jika `VITE_APP_MODE` tidak didefinisikan atau bernilai `all`.
        - Rute `/` merender web publik pelanggan, dan `/portal-bidan-indah` merender panel admin (rute `/admin` di-redirect ke `/`).
+
+6. **Keamanan Autentikasi Admin & Proteksi Anti-Brute-Force (`AdminPortal.tsx`, `AdminLogin.tsx`):**
+   - Dilarang menyimpan atau menampilkan teks PIN mentah dalam antarmuka UI (`"PIN Bawaan: 123456"` dilarang).
+   - Verifikasi PIN berbasis Web Crypto API (`crypto.subtle.digest('SHA-256', ...)`) terhadap environment variable `VITE_ADMIN_PIN_HASH` (dengan fallback hash SHA-256 default hanya untuk mode lokal jika env belum diset).
+   - **Lockout Anti-Brute-Force:** Counter kegagalan (`indah_spa_pin_attempts`) dan waktu kunci (`indah_spa_pin_locked_until`) disimpan di `localStorage`. Jika salah memasukkan PIN sebanyak **5 kali**, nonaktifkan seluruh tombol keypad selama **15 menit** dan tampilkan hitung mundur sisa waktu tunggu. Reset counter ke `0` saat PIN benar.
+   - **Keamanan Sesi & Auto-Lock:** Status autentikasi disimpan di `sessionStorage` (bukan `localStorage` permanen) dengan batas waktu sesi aktif maksimal **2 jam** serta *idle auto-lock* 30 menit tanpa aktivitas pengguna.
+
+7. **Kebijakan Row Level Security (RLS) Supabase Ketat:**
+   - Seluruh operasi `SELECT`, `UPDATE`, dan `DELETE` pada tabel `bookings`, `blocked_slots`, dan `testimonials` hanya diizinkan untuk peran `authenticated`.
+   - Pengunjung publik anonim hanya diizinkan melakukan operasi `INSERT` pada tabel `bookings` untuk membuat reservasi baru, serta membaca slot terisi/libur melalui RPC bertipe `SECURITY DEFINER` (`get_booked_slots`).

@@ -289,20 +289,111 @@ export async function createBooking(
 // ADMIN DATA FUNCTIONS
 // ==========================================
 
-export async function verifyAdminPin(pin: string): Promise<boolean> {
+export const DEFAULT_ADMIN_PIN_HASH = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
+export const STORAGE_KEY_CUSTOM_PIN_HASH = 'indah_spa_custom_pin_hash';
+
+export async function hashPin(pin: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+}
+
+/**
+ * Membaca hash PIN aktif dengan urutan prioritas:
+ * 1. clinic_settings (Supabase) key: 'admin_pin_hash'
+ * 2. indah_spa_custom_pin_hash (localStorage)
+ * 3. VITE_ADMIN_PIN_HASH (Environment Variable)
+ * 4. DEFAULT_ADMIN_PIN_HASH (Hash default untuk '123456')
+ */
+export async function getActivePinHash(): Promise<string> {
   if (supabase) {
     try {
-      const { data, error } = await supabase.rpc('verify_admin_pin', { pin_input: pin });
-      if (!error && typeof data === 'boolean') {
-        return data;
+      const { data, error } = await supabase
+        .from('clinic_settings')
+        .select('value')
+        .eq('key', 'admin_pin_hash')
+        .maybeSingle();
+
+      if (!error && data?.value && data.value.trim()) {
+        return data.value.trim().toLowerCase();
       }
     } catch (e) {
-      console.warn('RPC verify_admin_pin error, fallback to settings:', e);
+      console.warn('Gagal membaca PIN hash dari Supabase clinic_settings:', e);
     }
   }
 
-  const settings = getLocalSettings();
-  return pin === settings.admin_pin;
+  const customLocalHash = localStorage.getItem(STORAGE_KEY_CUSTOM_PIN_HASH);
+  if (customLocalHash && customLocalHash.trim()) {
+    return customLocalHash.trim().toLowerCase();
+  }
+
+  const envHash = import.meta.env.VITE_ADMIN_PIN_HASH;
+  if (envHash && envHash.trim()) {
+    return envHash.trim().toLowerCase();
+  }
+
+  return DEFAULT_ADMIN_PIN_HASH;
+}
+
+/**
+ * Menyimpan PIN baru dalam bentuk hash SHA-256 ke localStorage dan tabel clinic_settings Supabase
+ */
+export async function saveAdminPinHash(
+  newPin: string,
+  oldPin?: string
+): Promise<{ success: boolean; hash: string }> {
+  const newPinHash = await hashPin(newPin);
+
+  // 1. Simpan hash ke localStorage
+  localStorage.setItem(STORAGE_KEY_CUSTOM_PIN_HASH, newPinHash);
+
+  // 2. Simpan hash ke tabel clinic_settings Supabase jika terhubung
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('clinic_settings')
+        .upsert(
+          {
+            key: 'admin_pin_hash',
+            value: newPinHash,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'key' }
+        );
+
+      if (error) {
+        console.warn('Gagal upsert clinic_settings Supabase:', error);
+      }
+    } catch (e) {
+      console.warn('Error saat menyimpan ke clinic_settings Supabase:', e);
+    }
+
+    // Sinkronkan juga ke RPC admin_update_setting jika tersedia
+    if (oldPin) {
+      try {
+        await supabase.rpc('admin_update_setting', {
+          pin_input: oldPin,
+          p_key: 'admin_pin_hash',
+          p_value: newPinHash,
+        });
+      } catch (e) {
+        // Abaikan jika RPC belum diperbarui
+      }
+    }
+  }
+
+  // 3. Update session storage aktif
+  sessionStorage.setItem('imb_admin_pin', newPin);
+
+  return { success: true, hash: newPinHash };
+}
+
+export async function verifyAdminPin(pin: string): Promise<boolean> {
+  const inputHash = await hashPin(pin);
+  const activeHash = await getActivePinHash();
+  return inputHash === activeHash;
 }
 
 export async function fetchAdminBookings(

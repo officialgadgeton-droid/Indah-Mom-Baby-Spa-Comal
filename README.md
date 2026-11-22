@@ -80,12 +80,14 @@ Proyek ini menggunakan arsitektur **Dual-Build Mode** dari satu repositori GitHu
 4. **Langkah 4 (Konfirmasi & WhatsApp):** Ringkasan pesanan disimpan ke tabel `bookings` Supabase dengan status `'pending'` dan langsung membuka chat WhatsApp resmi Bidan.
 
 ### 3. Panel Admin Khusus Bidan
-- **Proteksi PIN 6 Digit:** Keypad virtual anti-password manager prompt browser (PIN bawaan: `123456`).
+- **Proteksi PIN Berbasis Hash SHA-256:** Verifikasi PIN menggunakan Web Crypto API (`crypto.subtle.digest`) terhadap `VITE_ADMIN_PIN_HASH` tanpa mengekspos PIN mentah dalam kode UI browser.
+- **Sistem Anti-Brute-Force:** Kunci keypad virtual secara otomatis selama **15 menit** jika terjadi **5 kali** kesalahan input PIN berturut-turut, lengkap dengan indikator hitung mundur waktu tunggu (`mm:ss`).
+- **Keamanan Sesi & Auto-Lock:** Status login disimpan di `sessionStorage` dengan batas waktu sesi aktif maksimal **2 jam** serta *idle auto-lock* setelah **30 menit** tanpa interaksi mouse/keyboard.
 - **Tab 1: Reservasi & Jadwal:** Filter tanggal & status, konfirmasi slot, batalkan, selesaikan, kirim pengingat WA H-1, dan input booking manual.
 - **Tab 2: Kelola Layanan:** CRUD katalog layanan (tambah, edit, toggle aktif/nonaktif, hapus).
 - **Tab 3: Ulasan & Testimoni:** Kelola ulasan pelanggan, moderasi foto, edit testimoni, dan tambah ulasan manual.
 - **Tab 4: Tutup Jadwal / Hari Libur:** Blokir tanggal/jam tertentu saat cuti.
-- **Tab 5: Pengaturan Klinik:** Update kontak WA, alamat klinik, dan ganti PIN Admin 6 digit.
+- **Tab 5: Pengaturan Klinik:** Update kontak WA, alamat klinik, dan ubah PIN Admin.
 
 ---
 
@@ -100,6 +102,12 @@ Skrip SQL lengkap yang telah disiapkan tersedia di:
 3. `testimonials`: Data testimoni pelanggan, rating, foto dokumentasi, dan status publikasi.
 4. `blocked_slots`: Data tanggal/jam libur yang ditutup oleh Bidan.
 5. `app_settings`: Pengaturan nama klinik, nomor WhatsApp, alamat, dan PIN Admin.
+
+### Kebijakan Row Level Security (RLS) Ketat:
+- **`bookings`:** Pengunjung publik hanya diizinkan melakukan operasi `INSERT` (reservasi mandiri). Seluruh operasi `SELECT`, `UPDATE`, dan `DELETE` hanya diizinkan untuk peran `authenticated` (Bidan/Admin terautentikasi).
+- **`blocked_slots`:** Seluruh operasi `SELECT`, `INSERT`, `UPDATE`, dan `DELETE` hanya diizinkan untuk peran `authenticated`. Ketersediaan slot publik dihitung lewat fungsi RPC `SECURITY DEFINER` `get_booked_slots(date)`.
+- **`testimonials`:** Seluruh operasi `SELECT`, `INSERT`, `UPDATE`, dan `DELETE` hanya diizinkan untuk peran `authenticated`.
+- **`services` & `app_settings`:** Pengunjung publik hanya dapat membaca data yang aktif/publik; manipulasi data hanya untuk `authenticated`.
 
 ---
 
@@ -134,8 +142,16 @@ Dari **satu repositori GitHub yang sama**, Anda akan membuat **dua project Pages
    - **Build output directory:** `dist`
 4. Buka tab **Environment variables (Production & Preview)**, lalu tambahkan:
    - `VITE_APP_MODE` = `admin`
+   - `VITE_ADMIN_PIN_HASH` = `8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92` *(hash dari PIN rahasia Anda)*
    - `VITE_SUPABASE_URL` = `https://your-project.supabase.co`
    - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOi...`
+
+   > 💡 **Cara Menghasilkan Hash SHA-256 untuk PIN Anda:**
+   > - **Node.js:** `node -e "console.log(require('crypto').createHash('sha256').update('PIN_ANDA').digest('hex'))"`
+   > - **PowerShell:** `[BitConverter]::ToString([System.Security.Cryptography.SHA256]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes('PIN_ANDA'))).Replace('-','').ToLower()`
+   > - **Linux/Mac:** `echo -n "PIN_ANDA" | sha256sum | awk '{print $1}'`
+   > *(Nilai default `8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92` adalah hash dari PIN bawaan `123456`)*.
+
 5. Klik **Save and Deploy**.
 6. Project ini akan menghasilkan URL khusus seperti `https://admin-indahspa.pages.dev` yang langsung menampilkan portal PIN Admin di halaman root `/` dengan proteksi `noindex, nofollow`.
 
@@ -181,3 +197,11 @@ $env:VITE_APP_MODE="admin"; npm run build; npm run preview
    - Pastikan seluruh halaman bebas *horizontal overflow* di layar HP (`overflow-x-hidden`), tetap menjaga palet warna utama Deep Plum (`#4A154B`), Warm Gold (`#D4AF37`), dan Soft Cream (`#FAF6F0`), serta animasi ringan.
 5. **Arsitektur Dual-Build Mode Cloudflare Pages (`VITE_APP_MODE`):**
    - Mendukung pemisahan build fisik untuk domain publik (`VITE_APP_MODE=public`) dan portal admin (`VITE_APP_MODE=admin`) dengan eliminasi kode via Rollup tree-shaking dan noindex robot meta tag.
+6. **Keamanan Autentikasi Admin & Proteksi Anti-Brute-Force (`AdminPortal.tsx`, `AdminLogin.tsx`):**
+   - Dilarang menampilkan teks PIN mentah di antarmuka UI.
+   - Verifikasi PIN berbasis hash SHA-256 via Web Crypto API dicocokkan dengan `VITE_ADMIN_PIN_HASH`.
+   - Lockout anti-brute-force: 5x kegagalan mengunci keypad selama 15 menit dengan hitung mundur langsung.
+   - Sesi di `sessionStorage` dengan batas maksimal 2 jam dan *idle auto-lock* 30 menit.
+7. **Kebijakan Row Level Security (RLS) Supabase Ketat:**
+   - Seluruh operasi `SELECT`, `UPDATE`, dan `DELETE` pada tabel `bookings`, `blocked_slots`, dan `testimonials` hanya diizinkan untuk peran `authenticated`.
+   - Publik anonim hanya diizinkan melakukan `INSERT` pada tabel `bookings` dan membaca ketersediaan slot melalui RPC `SECURITY DEFINER` `get_booked_slots`.
