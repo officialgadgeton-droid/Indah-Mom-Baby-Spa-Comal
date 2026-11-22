@@ -218,12 +218,14 @@ CREATE POLICY "Authenticated users can manage settings"
     WITH CHECK (true);
 
 -- 5. Testimonials:
--- - Publik hanya bisa melihat testimoni yang aktif
--- - Operasi kelola (INSERT/UPDATE/DELETE) untuk user authenticated atau lewat RPC admin
+-- - Mengizinkan SELECT pada public.testimonials agar publik dan dashboard admin
+--   dapat menampilkan testimoni (baik berstatus Aktif maupun Disembunyikan untuk keperluan kelola admin).
+-- - Pemfilteran hanya testimoni aktif dilakukan di level query publik (misal: eq('is_active', true) pada halaman depan).
 DROP POLICY IF EXISTS "Public can view active testimonials" ON public.testimonials;
-CREATE POLICY "Public can view active testimonials"
+DROP POLICY IF EXISTS "Public can view testimonials" ON public.testimonials;
+CREATE POLICY "Public can view testimonials"
     ON public.testimonials FOR SELECT
-    USING (is_active = true);
+    USING (true);
 
 DROP POLICY IF EXISTS "Allow anon insert testimonials" ON public.testimonials;
 DROP POLICY IF EXISTS "Allow anon update testimonials" ON public.testimonials;
@@ -611,6 +613,9 @@ GRANT EXECUTE ON FUNCTION public.admin_manage_testimonial(text, text, uuid, text
 
 -- Berikan hak akses tabel clinic_settings untuk pengelolaan PIN hash admin
 GRANT ALL ON TABLE public.clinic_settings TO anon, authenticated;
+
+-- Berikan hak akses SELECT pada testimonials untuk publik dan dashboard admin
+GRANT SELECT ON TABLE public.testimonials TO anon, authenticated;
 
 -- ====================================================================
 -- KONFIGURASI SUPABASE STORAGE (BUCKET: testimonials)

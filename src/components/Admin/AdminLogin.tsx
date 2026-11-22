@@ -148,6 +148,10 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ mode, onSuccess, onBackT
         setLockedUntil(null);
         setLockoutRemainingSec(0);
 
+        // Simpan PIN sesi sementara untuk kebutuhan otorisasi RPC admin
+        sessionStorage.setItem('indah_spa_session_pin', pinToVerify);
+        sessionStorage.setItem('imb_admin_pin', pinToVerify);
+
         success('PIN Terverifikasi. Selamat datang kembali, Bidan Indah!');
         onSuccess(pinToVerify);
       } else {

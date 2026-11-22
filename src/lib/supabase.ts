@@ -295,11 +295,42 @@ export async function createBooking(
 }
 
 // ==========================================
-// ADMIN DATA FUNCTIONS
+// ADMIN DATA FUNCTIONS & SESSION PIN
 // ==========================================
 
 export const DEFAULT_ADMIN_PIN_HASH = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
 export const STORAGE_KEY_CUSTOM_PIN_HASH = 'indah_spa_custom_pin_hash';
+export const ADMIN_SESSION_PIN_KEY = 'indah_spa_session_pin';
+
+/**
+ * Mengambil PIN sesi admin yang valid dari sessionStorage
+ */
+export function getAdminSessionPin(): string {
+  if (typeof window === 'undefined') return '';
+  return (
+    sessionStorage.getItem(ADMIN_SESSION_PIN_KEY) ||
+    sessionStorage.getItem('imb_admin_pin') ||
+    ''
+  );
+}
+
+/**
+ * Menyimpan PIN sesi admin ke sessionStorage
+ */
+export function setAdminSessionPin(pin: string): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(ADMIN_SESSION_PIN_KEY, pin);
+  sessionStorage.setItem('imb_admin_pin', pin);
+}
+
+/**
+ * Menghapus PIN sesi admin dari sessionStorage
+ */
+export function clearAdminSessionPin(): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(ADMIN_SESSION_PIN_KEY);
+  sessionStorage.removeItem('imb_admin_pin');
+}
 
 export async function hashPin(pin: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -399,7 +430,7 @@ export async function saveAdminPinHash(
   localStorage.setItem(STORAGE_KEY_CUSTOM_PIN_HASH, newPinHash);
 
   // 3. Update session storage aktif
-  sessionStorage.setItem('imb_admin_pin', newPin);
+  setAdminSessionPin(newPin);
 
   return { success: true, hash: newPinHash };
 }
@@ -668,11 +699,10 @@ export async function fetchActiveTestimonials(): Promise<Testimonial[]> {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        return data as Testimonial[];
-      }
       if (error) {
         console.warn('Gagal fetch active testimonials dari Supabase:', error);
+      } else if (data) {
+        return data as Testimonial[];
       }
     } catch (e) {
       console.warn('Gagal fetch testimonials dari Supabase, fallback ke lokal:', e);
@@ -682,7 +712,7 @@ export async function fetchActiveTestimonials(): Promise<Testimonial[]> {
   return getLocalTestimonials().filter(t => t.is_active);
 }
 
-export async function fetchAllTestimonialsAdmin(): Promise<Testimonial[]> {
+export async function fetchAdminTestimonials(): Promise<Testimonial[]> {
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -690,19 +720,27 @@ export async function fetchAllTestimonialsAdmin(): Promise<Testimonial[]> {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
+      if (error) {
+        console.error('Gagal fetch all testimonials dari Supabase:', error);
+        throw new Error(error.message || 'Gagal memuat daftar testimoni dari server.');
+      }
+
+      if (data) {
         return data as Testimonial[];
       }
-      if (error) {
-        console.warn('Gagal fetch all testimonials dari Supabase:', error);
-      }
-    } catch (e) {
+    } catch (e: any) {
       console.warn('Gagal fetch all testimonials dari Supabase:', e);
+      if (isSupabaseConfigured) {
+        throw e;
+      }
     }
   }
 
   return getLocalTestimonials();
 }
+
+// Alias untuk kompatibilitas ke belakang
+export const fetchAllTestimonialsAdmin = fetchAdminTestimonials;
 
 export async function uploadTestimonialImage(
   file: Blob,
@@ -716,7 +754,7 @@ export async function uploadTestimonialImage(
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('testimonials')
       .upload(fileName, file, {
-        contentType: 'image/jpeg',
+        contentType: file.type || 'image/jpeg',
         upsert: true,
       });
 
@@ -755,12 +793,17 @@ export async function saveTestimonial(
     is_active?: boolean;
   }
 ): Promise<Testimonial> {
+  const effectivePin = pin || getAdminSessionPin();
   const isUpdate = Boolean(testimonial.id && !testimonial.id.startsWith('testi-'));
 
   if (supabase) {
+    if (!effectivePin) {
+      throw new Error('PIN sesi admin tidak ditemukan. Silakan login ulang.');
+    }
+
     // WAJIB memanggil RPC admin_manage_testimonial (bukan .from('testimonials').insert/update)
     const { data: rpcData, error: rpcError } = await supabase.rpc('admin_manage_testimonial', {
-      pin_input: pin,
+      pin_input: effectivePin,
       p_action: isUpdate ? 'update' : 'create',
       p_id: isUpdate ? testimonial.id : null,
       p_image_url: testimonial.image_url,
@@ -815,12 +858,18 @@ export async function saveTestimonial(
 }
 
 export async function toggleTestimonialStatus(pin: string, id: string): Promise<boolean> {
+  const effectivePin = pin || getAdminSessionPin();
+
   if (supabase) {
     const isLocalId = id.startsWith('testi-');
     if (!isLocalId) {
+      if (!effectivePin) {
+        throw new Error('PIN sesi admin tidak ditemukan. Silakan login ulang.');
+      }
+
       // WAJIB memanggil RPC admin_manage_testimonial (bukan .from('testimonials').update)
       const { error } = await supabase.rpc('admin_manage_testimonial', {
-        pin_input: pin,
+        pin_input: effectivePin,
         p_action: 'toggle_active',
         p_id: id,
         p_image_url: null,
@@ -847,12 +896,18 @@ export async function toggleTestimonialStatus(pin: string, id: string): Promise<
 }
 
 export async function deleteTestimonial(pin: string, id: string): Promise<boolean> {
+  const effectivePin = pin || getAdminSessionPin();
+
   if (supabase) {
     const isLocalId = id.startsWith('testi-');
     if (!isLocalId) {
+      if (!effectivePin) {
+        throw new Error('PIN sesi admin tidak ditemukan. Silakan login ulang.');
+      }
+
       // WAJIB memanggil RPC admin_manage_testimonial (bukan .from('testimonials').delete)
       const { error } = await supabase.rpc('admin_manage_testimonial', {
-        pin_input: pin,
+        pin_input: effectivePin,
         p_action: 'delete',
         p_id: id,
         p_image_url: null,

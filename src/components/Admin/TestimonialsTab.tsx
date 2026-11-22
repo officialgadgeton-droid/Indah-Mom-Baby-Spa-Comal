@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Testimonial } from '../../types';
 import {
+  fetchAdminTestimonials,
   fetchAllTestimonialsAdmin,
   saveTestimonial,
   toggleTestimonialStatus,
   deleteTestimonial,
   uploadTestimonialImage,
   isSupabaseConfigured,
+  getAdminSessionPin,
 } from '../../lib/supabase';
 import { compressImage, formatFileSize, CompressionResult } from '../../lib/imageCompression';
 import { useToast } from '../../context/ToastContext';
@@ -25,6 +27,8 @@ import {
   X,
   FileCheck,
   Zap,
+  AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface TestimonialsTabProps {
@@ -47,6 +51,12 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Status & Notification Banners
+  const [uploadStepMessage, setUploadStepMessage] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccessBanner, setUploadSuccessBanner] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   // Lightbox Modal for previewing
   const [previewImage, setPreviewImage] = useState<{ url: string; caption?: string } | null>(null);
   // Broken image tracker to prevent rendering broken image icons
@@ -54,12 +64,15 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
 
   const loadTestimonials = async () => {
     setIsLoading(true);
+    setFetchError(null);
     try {
-      const data = await fetchAllTestimonialsAdmin();
+      const data = await fetchAdminTestimonials();
       setTestimonials(data);
-    } catch (e) {
-      console.error(e);
-      error('Gagal memuat daftar testimoni.');
+    } catch (e: any) {
+      console.error('Error memuat testimoni:', e);
+      const msg = e?.message || 'Gagal memuat daftar testimoni dari server.';
+      setFetchError(msg);
+      error(`Gagal memuat testimoni: ${msg}`);
     } finally {
       setIsLoading(false);
     }
@@ -79,6 +92,8 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
       return;
     }
 
+    setUploadError(null);
+    setUploadSuccessBanner(null);
     setSelectedFile(file);
     setIsCompressing(true);
     try {
@@ -100,6 +115,7 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
     setCompressionResult(null);
     setCaption('');
     setIsActiveOnUpload(true);
+    setUploadStepMessage(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -113,13 +129,25 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
       return;
     }
 
+    const pinToUse = adminPin || getAdminSessionPin();
+    if (!pinToUse && isSupabaseConfigured) {
+      const pinMsg = 'PIN sesi admin tidak ditemukan. Silakan login kembali ke portal admin.';
+      setUploadError(pinMsg);
+      error(pinMsg);
+      return;
+    }
+
     setIsSubmitting(true);
+    setUploadError(null);
+    setUploadSuccessBanner(null);
+
     try {
       let finalImageUrl = compressionResult.dataUrl;
       let storageMode: 'supabase' | 'local' = 'local';
 
       // 1. Jika Supabase aktif, upload blob ke Supabase Storage bucket 'testimonials'
       if (isSupabaseConfigured) {
+        setUploadStepMessage('Langkah 1/3: Mengunggah berkas foto ke Supabase Storage...');
         const fileExt = 'jpg';
         const cleanName = caption
           ? caption.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)
@@ -128,41 +156,56 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
 
         const uploadRes = await uploadTestimonialImage(compressionResult.blob, fileName);
         if (uploadRes.error || !uploadRes.url) {
-          throw new Error(`Upload ke Storage gagal: ${uploadRes.error || 'URL tidak tersedia'}`);
+          const detail = uploadRes.error || 'URL publik gambar tidak tersedia dari Supabase Storage.';
+          setUploadError(`Upload foto ke Storage gagal: ${detail}`);
+          error(`Upload Storage Gagal: ${detail}`);
+          setIsSubmitting(false);
+          setUploadStepMessage(null);
+          return;
         }
         finalImageUrl = uploadRes.url;
         storageMode = 'supabase';
       }
 
       // 2. Simpan record data via RPC admin_manage_testimonial
-      const result = await saveTestimonial(adminPin, {
+      setUploadStepMessage('Langkah 2/3: Menyimpan data testimoni via RPC database...');
+      const result = await saveTestimonial(pinToUse, {
         image_url: finalImageUrl,
         caption: caption.trim() || undefined,
         is_active: isActiveOnUpload,
       });
 
-      if (result) {
-        if (storageMode === 'supabase') {
-          success('Foto testimoni berhasil di-upload ke Supabase Cloud!');
-        } else {
-          success('Testimoni berhasil disimpan di Local Storage (Mode Preview)!');
-        }
-        handleResetForm();
-        loadTestimonials();
-      } else {
-        error('Gagal menyimpan data testimoni.');
+      if (!result) {
+        throw new Error('Gagal menyimpan testimoni: Server tidak mengembalikan konfirmasi data.');
       }
+
+      // 3. Langsung panggil ulang fetch daftar testimoni dan tampilkan banner sukses hijau
+      setUploadStepMessage('Langkah 3/3: Memperbarui daftar galeri testimoni...');
+      await loadTestimonials();
+
+      const successMsg =
+        storageMode === 'supabase'
+          ? 'Foto testimoni WhatsApp berhasil diunggah ke Supabase Cloud dan langsung tersimpan di database!'
+          : 'Foto testimoni WhatsApp berhasil disimpan di penyimpanan lokal (Mode Preview)!';
+
+      setUploadSuccessBanner(successMsg);
+      success(successMsg);
+      handleResetForm();
     } catch (err: any) {
-      console.error(err);
-      error(err?.message || 'Terjadi kendala saat upload testimoni.');
+      console.error('Kendala saat upload testimoni:', err);
+      const errMsg = err?.message || 'Terjadi kendala tak terduga saat menyimpan testimoni.';
+      setUploadError(errMsg);
+      error(errMsg);
     } finally {
       setIsSubmitting(false);
+      setUploadStepMessage(null);
     }
   };
 
   const handleToggle = async (id: string, currentStatus: boolean) => {
+    const pinToUse = adminPin || getAdminSessionPin();
     try {
-      const ok = await toggleTestimonialStatus(adminPin, id);
+      const ok = await toggleTestimonialStatus(pinToUse, id);
       if (ok) {
         success(
           currentStatus
@@ -182,8 +225,9 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Bunda yakin ingin menghapus foto testimoni ini?')) return;
 
+    const pinToUse = adminPin || getAdminSessionPin();
     try {
-      const ok = await deleteTestimonial(adminPin, id);
+      const ok = await deleteTestimonial(pinToUse, id);
       if (ok) {
         success('Testimoni berhasil dihapus.');
         loadTestimonials();
@@ -280,6 +324,56 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
             Upload Screenshot Baru dari HP / Laptop
           </h3>
         </div>
+
+        {/* Banner Sukses Unggah */}
+        {uploadSuccessBanner && (
+          <div className="mb-5 bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex items-start justify-between gap-3 animate-fade-in shadow-xs">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
+                  Testimoni Berhasil Disimpan & Sinkron!
+                </h4>
+                <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">
+                  {uploadSuccessBanner}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUploadSuccessBanner(null)}
+              className="text-emerald-600 hover:text-emerald-800 p-1 rounded-lg hover:bg-emerald-100 transition-colors"
+              title="Tutup Pesan"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Banner Error Upload */}
+        {uploadError && (
+          <div className="mb-5 bg-rose-50 border border-rose-300 rounded-2xl p-4 flex items-start justify-between gap-3 animate-shake shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-bold text-rose-900 uppercase tracking-wider">
+                  Kendala Saat Menyimpan Testimoni
+                </h4>
+                <p className="text-xs text-rose-800 mt-1 font-mono text-[11px] break-all bg-white/70 p-2 rounded-lg border border-rose-200">
+                  {uploadError}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUploadError(null)}
+              className="text-rose-600 hover:text-rose-800 p-1 rounded-lg hover:bg-rose-100 transition-colors"
+              title="Tutup Pesan"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmitUpload} className="space-y-5">
           {/* File Picker Area */}
@@ -463,6 +557,14 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
             </div>
           </div>
 
+          {/* Progress Indicator saat Proses Upload & Simpan */}
+          {isSubmitting && uploadStepMessage && (
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex items-center gap-2.5 text-xs text-primary animate-pulse">
+              <RefreshCw className="w-4 h-4 animate-spin text-accent shrink-0" />
+              <span className="font-semibold">{uploadStepMessage}</span>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
             {compressionResult && (
@@ -488,7 +590,7 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
               {isSubmitting ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Menyimpan Testimoni...</span>
+                  <span>{uploadStepMessage ? 'Memproses...' : 'Menyimpan Testimoni...'}</span>
                 </>
               ) : (
                 <>
@@ -503,6 +605,31 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
 
       {/* DAFTAR & KONTROL TESTIMONI */}
       <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-soft border border-primary/10">
+        {/* Banner Peringatan Fetch Error */}
+        {fetchError && (
+          <div className="mb-5 bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-start justify-between gap-3 text-xs text-amber-900 shadow-xs animate-fade-in">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block uppercase tracking-wider text-[11px]">
+                  Kendala Mengambil Data dari Supabase:
+                </span>
+                <span className="font-mono text-[11px] block mt-1 bg-white/70 p-2 rounded border border-amber-200 break-all text-amber-800">
+                  {fetchError}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={loadTestimonials}
+              className="text-xs font-bold text-amber-900 hover:text-amber-950 underline flex items-center gap-1.5 shrink-0 px-2 py-1 bg-white rounded-lg border border-amber-200"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Coba Lagi</span>
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h3 className="font-serif font-bold text-base sm:text-lg text-primary">

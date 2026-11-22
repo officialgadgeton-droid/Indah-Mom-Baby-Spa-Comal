@@ -10,6 +10,7 @@ interface AdminPortalProps {
 
 const STORAGE_KEYS = {
   PIN: 'imb_admin_pin',
+  SESSION_PIN: 'indah_spa_session_pin',
   SESSION_START: 'imb_admin_session_start',
   LAST_ACTIVITY: 'imb_admin_last_activity',
 };
@@ -24,13 +25,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
 
   const clearAdminSession = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEYS.PIN);
+    sessionStorage.removeItem(STORAGE_KEYS.SESSION_PIN);
     sessionStorage.removeItem(STORAGE_KEYS.SESSION_START);
     sessionStorage.removeItem(STORAGE_KEYS.LAST_ACTIVITY);
   }, []);
 
   // Inisialisasi status autentikasi dari sessionStorage dengan validasi batas waktu
   const [adminPin, setAdminPin] = useState<string | null>(() => {
-    const pin = sessionStorage.getItem(STORAGE_KEYS.PIN);
+    const pin = sessionStorage.getItem(STORAGE_KEYS.SESSION_PIN) || sessionStorage.getItem(STORAGE_KEYS.PIN);
     if (!pin) return null;
 
     const sessionStart = parseInt(sessionStorage.getItem(STORAGE_KEYS.SESSION_START) || '0', 10);
@@ -56,6 +58,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
   const handleAdminSuccess = (pin: string) => {
     const now = Date.now();
     sessionStorage.setItem(STORAGE_KEYS.PIN, pin);
+    sessionStorage.setItem(STORAGE_KEYS.SESSION_PIN, pin);
     sessionStorage.setItem(STORAGE_KEYS.SESSION_START, now.toString());
     sessionStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, now.toString());
     lastActivityRef.current = now;
