@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 680" width="100%" height="100%">
+  <defs>
+    <pattern id="waPattern2" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M10 10l2 2m10-5l3 1m10 12l2-2m-15 10l1 3" stroke="#e0d6cb" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+    </pattern>
+    <filter id="shadow2" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="400" height="680" fill="#EFEAE2"/>
+  <rect width="400" height="680" fill="url(#waPattern2)"/>
+
+  <!-- WhatsApp Top App Bar -->
+  <rect width="400" height="74" fill="#075E54"/>
+  
+  <path d="M20 38 L12 45 L20 52 M13 45 L28 45" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="50" cy="45" r="18" fill="#5B2C6F"/>
+  <text x="50" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="bold" fill="#F4E8C1" text-anchor="middle">🌸</text>
+  
+  <text x="76" y="41" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="bold" fill="#FFFFFF">Bidan Indah Comal</text>
+  <text x="76" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" fill="#E0F2F1">online • Bidan Praktik Mandiri</text>
+
+  <circle cx="310" cy="45" r="12" fill="#000000" fill-opacity="0.08"/>
+  <path d="M304 40 h8 a2 2 0 0 1 2 2 v6 a2 2 0 0 1 -2 2 h-8 a2 2 0 0 1 -2 -2 v-6 a2 2 0 0 1 2 -2 z M314 42 l4 -2 v10 l-4 -2 z" fill="#FFFFFF"/>
+  <path d="M346 39 c-1 0 -2.5 1 -2.5 2.5 c0 4 3.5 7.5 7.5 7.5 c1.5 0 2.5 -1.5 2.5 -2.5 l-1.8 -2.2 l-1.7 0.8 c-1 -0.5 -2 -1.5 -2.5 -2.5 l0.8 -1.7 z" fill="#FFFFFF"/>
+  <circle cx="380" cy="40" r="2" fill="#FFFFFF"/>
+  <circle cx="380" cy="46" r="2" fill="#FFFFFF"/>
+  <circle cx="380" cy="52" r="2" fill="#FFFFFF"/>
+
+  <!-- Date Pill -->
+  <g transform="translate(145, 92)">
+    <rect width="110" height="24" rx="12" fill="#FFFFFF" fill-opacity="0.85" filter="url(#shadow2)"/>
+    <text x="55" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600" fill="#555555" text-anchor="middle">KEMARIN</text>
+  </g>
+
+  <!-- CHAT 1: From Bunda Anisa -->
+  <g transform="translate(50, 134)" filter="url(#shadow2)">
+    <path d="M 0 12 C 0 5 5 0 12 0 L 320 0 C 328 0 334 5 334 12 L 334 92 C 334 99 328 104 320 104 L 12 104 C 5 104 0 99 0 92 Z" fill="#E7FFDB"/>
+    <path d="M 334 8 L 342 14 L 334 20 Z" fill="#E7FFDB"/>
+    <text x="14" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" fill="#111B21">
+      <tspan x="14" dy="0">Bu Bidan Indah, makasih banyak yaa!</tspan>
+      <tspan x="14" dy="18">Alhamdulillah dedek Kenzo setelah ambil</tspan>
+      <tspan x="14" dy="18">Paket Bapil (Sinar + Uap + Massage) tadi sore,</tspan>
+      <tspan x="14" dy="18">napasnya langsung plong ga grok-grok lagi 😭🙏</tspan>
+    </text>
+    <text x="292" y="98" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" fill="#667781">19:40</text>
+    <path d="M 317 94 L 321 98 L 328 90 M 322 94 L 325 98 L 332 90" stroke="#53BDEB" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- CHAT 2: Reply from Bidan -->
+  <g transform="translate(16, 256)" filter="url(#shadow2)">
+    <path d="M 0 12 C 0 5 5 0 12 0 L 324 0 C 332 0 338 5 338 12 L 338 104 C 338 111 332 116 324 116 L 12 116 C 5 116 0 111 0 104 Z" fill="#FFFFFF"/>
+    <path d="M 0 8 L -8 14 L 0 20 Z" fill="#FFFFFF"/>
+    <text x="14" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" fill="#111B21">
+      <tspan x="14" dy="0">Alhamdulillah ya Allah.. Ikut lega dengernya</tspan>
+      <tspan x="14" dy="18">Bunda Anisa 🌸 Terapi sinar inframerah</tspan>
+      <tspan x="14" dy="18">& uap nebulizer memang ampuh bantu encerkan</tspan>
+      <tspan x="14" dy="18">lendir di saluran napas dedek. Tetap susui</tspan>
+      <tspan x="14" dy="18">sesering mungkin ya Bun agar cepat fit kembali 💪</tspan>
+    </text>
+    <text x="300" y="110" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" fill="#667781">19:45</text>
+  </g>
+
+  <!-- CHAT 3: From Bunda again -->
+  <g transform="translate(60, 390)" filter="url(#shadow2)">
+    <path d="M 0 12 C 0 5 5 0 12 0 L 314 0 C 322 0 328 5 328 12 L 328 88 C 328 95 322 100 314 100 L 12 100 C 5 100 0 95 0 88 Z" fill="#E7FFDB"/>
+    <path d="M 328 8 L 336 14 L 328 20 Z" fill="#E7FFDB"/>
+    <text x="14" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" fill="#111B21">
+      <tspan x="14" dy="0">Iya bu bidan, tadi lendirnya keluar banyak pas</tspan>
+      <tspan x="14" dy="18">ditepuk-tepuk lembut. Tidurnya juga pulas bgt,</tspan>
+      <tspan x="14" dy="18">ga rewel sesak lagi. Makasih banyak ya Bidan</tspan>
+      <tspan x="14" dy="18">Indah pelayanannya top bgt recommended! ❤️</tspan>
+    </text>
+    <text x="286" y="94" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" fill="#667781">19:50</text>
+    <path d="M 311 90 L 315 94 L 322 86 M 316 90 L 319 94 L 326 86" stroke="#53BDEB" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- CHAT 4: Bidan reply -->
+  <g transform="translate(16, 508)" filter="url(#shadow2)">
+    <path d="M 0 12 C 0 5 5 0 12 0 L 290 0 C 298 0 304 5 304 12 L 304 68 C 304 75 298 80 290 80 L 12 80 C 5 80 0 75 0 68 Z" fill="#FFFFFF"/>
+    <path d="M 0 8 L -8 14 L 0 20 Z" fill="#FFFFFF"/>
+    <text x="14" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" fill="#111B21">
+      <tspan x="14" dy="0">Sama-sama Bunda Anisa tersayang 🥰</tspan>
+      <tspan x="14" dy="18">Sehat-sehat selalu untuk Bunda & dedek sekeluarga.</tspan>
+      <tspan x="14" dy="18">Kapan-kapan mampir spa lagi ya Bun 🌸</tspan>
+    </text>
+    <text x="266" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" fill="#667781">19:55</text>
+  </g>
+
+  <!-- Bottom Chat Input Bar -->
+  <rect y="626" width="400" height="54" fill="#F0F2F5"/>
+  <rect x="14" y="633" width="324" height="40" rx="20" fill="#FFFFFF"/>
+  <text x="32" y="658" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" fill="#8696A0">Ketik pesan...</text>
+  <circle cx="366" cy="653" r="18" fill="#00A884"/>
+  <path d="M362 648 L371 653 L362 658 Z" fill="#FFFFFF"/>
+</svg>

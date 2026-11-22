@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Phone, Award, Sparkles, HeartHandshake, CheckCircle2, Home } from 'lucide-react';
+import { SpaBubbles } from './SpaBubbles';
 
 interface HeroProps {
   onBookClick: () => void;
@@ -12,16 +13,35 @@ export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '62878
 
   return (
     <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden bg-gradient-to-b from-[#FAF4FD] via-[#FDFBF7] to-cream">
-      {/* Decorative Blur Orbs */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -top-10 -right-20 w-80 h-80 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
+      {/* 1. Ambient Gradient Blobs (Deep Plum #4A154B/10 & Warm Gold #D4AF37/15) - Floating Smoothly */}
+      <div
+        className="absolute -top-12 left-1/4 w-[420px] h-[420px] rounded-full blur-3xl pointer-events-none z-0 animate-float-slow-1 opacity-90"
+        style={{
+          background: 'radial-gradient(circle, rgba(74, 21, 75, 0.12) 0%, rgba(91, 44, 111, 0.04) 60%, transparent 80%)',
+        }}
+      />
+      <div
+        className="absolute top-1/3 -right-24 w-[380px] h-[380px] rounded-full blur-3xl pointer-events-none z-0 animate-float-slow-2 opacity-85"
+        style={{
+          background: 'radial-gradient(circle, rgba(212, 175, 55, 0.16) 0%, rgba(197, 155, 39, 0.05) 60%, transparent 80%)',
+        }}
+      />
+      <div
+        className="absolute -bottom-10 left-10 w-[320px] h-[320px] rounded-full blur-3xl pointer-events-none z-0 animate-float-slow-1 opacity-70"
+        style={{
+          background: 'radial-gradient(circle, rgba(74, 21, 75, 0.08) 0%, rgba(212, 175, 55, 0.06) 50%, transparent 75%)',
+        }}
+      />
+
+      {/* 2. Floating Spa Bubbles Particles */}
+      <SpaBubbles count={7} className="opacity-80" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           {/* Left Column: Headline & Action */}
           <div className="lg:col-span-7 text-center lg:text-left space-y-6">
             {/* Top pill badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-primary/15 shadow-sm text-xs font-semibold text-primary">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-sm border border-primary/15 shadow-sm text-xs font-semibold text-primary transition-all duration-300 hover:shadow-md">
               <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <span>Klinik Mom & Baby Spa Terpercaya di Comal</span>
               <Sparkles className="w-3.5 h-3.5 text-accent" />
@@ -57,17 +77,17 @@ export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '62878
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
               <button
                 onClick={onBookClick}
-                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-accent hover:bg-accent-dark text-white font-bold text-base shadow-gold transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                className="btn-shimmer w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-accent hover:bg-accent-dark text-white font-bold text-base shadow-gold transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:translate-y-0"
               >
-                <Calendar className="w-5 h-5" />
-                <span>Booking Jadwal Sekarang</span>
+                <Calendar className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">Booking Jadwal Sekarang</span>
               </button>
 
               <a
                 href={`https://wa.me/${cleanWa}?text=Halo%20Bidan%20Indah,%20saya%20ingin%20konsultasi%20layanan%20treatment%20spa%20di%20Comal`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-white hover:bg-primary/5 text-primary font-semibold text-base border-2 border-primary/20 shadow-sm transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-white hover:bg-primary/5 text-primary font-semibold text-base border-2 border-primary/20 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md active:translate-y-0"
               >
                 <Phone className="w-4 h-4 text-emerald-600" />
                 <span>Konsultasi WA</span>
@@ -99,8 +119,8 @@ export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '62878
           <div className="lg:col-span-5 relative">
             <div className="relative mx-auto max-w-sm sm:max-w-md">
               {/* Outer decorative card */}
-              <div className="relative rounded-3xl bg-white p-4 sm:p-5 shadow-card border border-primary/10 overflow-hidden">
-                {/* Banner Suasana Treatment / Klinik (Photo / Elegant Fallback Gradient) */}
+              <div className="relative rounded-3xl bg-white p-4 sm:p-5 shadow-card border border-primary/10 overflow-hidden transition-all duration-300 hover:shadow-xl">
+                {/* Banner Suasana Treatment / Klinik */}
                 <div className="relative h-44 sm:h-48 rounded-2xl overflow-hidden mb-4 bg-gradient-to-br from-[#7A288A] via-[#9438A5] to-[#B3782E] shadow-inner group">
                   {/* Fallback ambient styling */}
                   <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/20 via-transparent to-black/40 pointer-events-none" />
@@ -166,7 +186,7 @@ export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '62878
 
                 {/* Floating Features List */}
                 <div className="mt-3.5 space-y-2">
-                  <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-cream/70 border border-primary/5 text-xs text-charcoal">
+                  <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-cream/70 border border-primary/5 text-xs text-charcoal transition-colors hover:bg-cream">
                     <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
                       1
                     </div>
@@ -176,7 +196,7 @@ export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '62878
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-cream/70 border border-primary/5 text-xs text-charcoal">
+                  <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-cream/70 border border-primary/5 text-xs text-charcoal transition-colors hover:bg-cream">
                     <div className="w-7 h-7 rounded-lg bg-accent/20 text-accent-dark flex items-center justify-center font-bold shrink-0">
                       2
                     </div>
@@ -186,7 +206,7 @@ export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '62878
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-cream/70 border border-primary/5 text-xs text-charcoal">
+                  <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-cream/70 border border-primary/5 text-xs text-charcoal transition-colors hover:bg-cream">
                     <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shrink-0">
                       3
                     </div>
@@ -198,9 +218,9 @@ export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '62878
                 </div>
               </div>
 
-              {/* Floating Badge */}
-              <div className="absolute -bottom-4 -left-4 sm:-left-6 bg-white rounded-2xl p-3 shadow-lg border border-accent/30 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-bold shrink-0">
+              {/* Floating Badge with Soft Bobbing Animation */}
+              <div className="absolute -bottom-4 -left-4 sm:-left-6 bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-accent/30 flex items-center gap-3 animate-float-badge z-20">
+                <div className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-bold shrink-0 shadow-sm">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>

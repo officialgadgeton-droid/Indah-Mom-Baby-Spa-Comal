@@ -1,12 +1,13 @@
 # Indah Mom & Baby Spa Comal (indahmombabyspa.com)
 
-Aplikasi web modern, responsif, dan lengkap untuk klinik **Indah Mom & Baby Spa Comal** yang berlokasi di Comal, Pemalang. Aplikasi ini dibangun dengan standar profesional menggunakan **React, Vite, TypeScript, Tailwind CSS, Lucide Icons, dan Supabase**, serta dioptimalkan untuk performa cepat dan siap dideploy ke **Cloudflare Pages**.
+Aplikasi web modern, responsif, dan lengkap untuk klinik **Indah Mom & Baby Spa Comal** yang berlokasi di Comal, Pemalang. Aplikasi ini dibangun dengan standar profesional menggunakan **React, Vite, TypeScript, Tailwind CSS, Lucide Icons, dan Supabase**, serta dioptimalkan untuk performa cepat dan arsitektur **Dual-Build Mode di Cloudflare Pages**.
 
 ---
 
 ## 🌸 Identitas Brand & Desain UI/UX
 - **Brand:** Indah Mom & Baby Spa Comal
-- **Domain Target:** `indahmombabyspa.com`
+- **Domain Publik:** `indahmombabyspa.com`
+- **Domain Portal Bidan:** `admin-indahspa.pages.dev` (atau subdomain custom)
 - **Logo:** `public/logo.png` digunakan pada Navbar, Footer, dan Favicon browser (file asli terjaga aman).
 - **Format Layanan:** **Tanpa Tampilan Harga** di seluruh website publik, form reservasi, pesan WhatsApp, maupun panel admin (fokus pada kenyamanan konsultasi & edukasi manfaat perawatan).
 - **Copywriting:** Menggunakan ejaan baku **"Treatment"** dengan sapaan hangat untuk *"Bunda"* dan *"Si Kecil"*.
@@ -15,6 +16,27 @@ Aplikasi web modern, responsif, dan lengkap untuk klinik **Indah Mom & Baby Spa 
   - **Secondary/Accent:** Warm Gold (`#C59B27`) untuk tombol CTA utama, highlight, dan badge
   - **Background:** Soft Cream (`#FDFBF7`) & Clean White (`#FFFFFF`)
   - **Text:** Dark Charcoal (`#1F2937`)
+
+---
+
+## 🏗️ Arsitektur Dual-Build Mode (`VITE_APP_MODE`)
+
+Proyek ini menggunakan arsitektur **Dual-Build Mode** dari satu repositori GitHub yang sama untuk menghasilkan dua aplikasi web terpisah secara fisik di Cloudflare Pages:
+
+| Pengaturan | Mode `'public'` | Mode `'admin'` | Mode `'all'` (Default) |
+| :--- | :--- | :--- | :--- |
+| **Target URL** | `indahmombabyspa.com` | `admin-indahspa.pages.dev` | `localhost:5173` / Preview |
+| **Fokus Pengguna** | Bunda / Pelanggan Publik | Khusus Bidan Indah & Staf | Pengembang / Local Dev |
+| **Rute Root `/`** | Landing Page & Reservasi | Verifikasi PIN & Dashboard Admin | Landing Page Publik |
+| **Rute Admin** | Tidak ada (redirect ke `/`) | Langsung di rute utama `/` | Akses via `/portal-bidan-indah` |
+| **Isolasi Bundel JS** | Kode Admin tereliminasi 100% | Hanya modul admin & login | Memuat kedua modul |
+| **SEO Indexing** | Terindeks (`index, follow`) | Disembunyikan (`noindex, nofollow`) | Sesuai rute |
+
+### Keunggulan Arsitektur:
+1. **Keamanan Maksimal:** Kode dashboard admin, fungsi manipulasi data, dan komponen sensitif dihilangkan dari bundel JS web publik melalui tree-shaking Rollup & dynamic lazy import.
+2. **Kenyamanan Bidan:** Bidan tidak perlu mengetik path rahasia yang panjang di browser HP; cukup membuka URL portal admin dan langsung disambut keypad PIN.
+3. **Privasi dari Search Engine:** Tag `<meta name="robots" content="noindex, nofollow" />` ditambahkan secara otomatis pada mode admin.
+4. **Satu Repositori:** Pembaruan tipe data, skema database, atau komponen bersama tetap terpusat dalam satu repo GitHub tanpa sinkronisasi ganda.
 
 ---
 
@@ -43,73 +65,119 @@ Aplikasi web modern, responsif, dan lengkap untuk klinik **Indah Mom & Baby Spa 
 ## ✨ Fitur Utama Sistem
 
 ### 1. Landing Page Interaktif & Responsif
-- **Navbar:** Logo klinik, link navigasi smooth scroll, tombol "Konsultasi WA", "Reservasi Sekarang", dan ikon akses area Bidan/Admin.
+- **Navbar:** Logo klinik, link navigasi smooth scroll, tombol "Konsultasi WA", dan "Reservasi Sekarang" (tanpa ada tautan/tombol admin).
 - **Hero Section:** Headline hangat, trust badges (Bidan bersertifikat, bahan 100% organik, ruang steril, homecare Comal & sekitarnya), tombol CTA booking jadwal & konsultasi WA.
 - **Katalog Layanan (3 Kategori Tab):** Tab interaktif dengan hitungan layanan, badge kategori, manfaat lengkap, durasi, target usia, dan tombol *"Pilih Layanan Ini"* (tanpa nominal harga).
 - **Profil Bidan & Keunggulan:** Kualifikasi medis Bidan Indah, pendekatan gentle care, kebersihan ruang klinik, dan jangkauan homecare (Comal, Ulujami, Ampelgading, Bodeh, Petarukan, Sragi).
-- **Panduan Cara Reservasi & Testimoni:** 4 langkah mudah serta cerita kepuasan dari Bunda di Comal.
-- **Lokasi & Kontak:** Alamat klinik, jam operasional (08:30 - 17:30 WIB), peta Google Maps embed, tombol navigasi rute, dan link WhatsApp & Instagram.
-- **Footer:** Rangkuman layanan resmi, kontak, hak cipta, dan shortcut ke `/admin`.
+- **Panduan Cara Reservasi & Testimoni:** 4 langkah mudah serta cerita kepuasan dari Bunda di Comal dengan filter kategori ulasan.
+- **Lokasi & Kontak:** Alamat klinik, jam operasional, peta Google Maps embed, tombol navigasi rute, dan link WhatsApp & Instagram.
+- **Footer:** Rangkuman layanan resmi, kontak, dan hak cipta.
 
 ### 2. Alur Reservasi Pintar (Multi-Step Wizard)
 1. **Langkah 1 (Tipe & Layanan):** Pilih kunjungan *Datang ke Klinik* atau *Homecare - Bidan ke Rumah*, dan pilih paket layanan dari 12 treatment resmi.
-2. **Langkah 2 (Tanggal & Slot Jam Real-Time):** Pilih tanggal (hari ini/masa depan) dan pilih jam (`08:30`, `10:00`, `11:30`, `13:30`, `15:00`, `16:30`). Jika slot sudah terisi (`confirmed`) atau ditutup libur admin, tombol otomatis nonaktif berlabel *"Penuh"* / *"Libur"*.
-3. **Langkah 3 (Data Bunda & Si Kecil):** Input nama Bunda, nomor WhatsApp aktif, nama anak, usia anak, alamat lengkap (wajib jika homecare), dan catatan/keluhan khusus. Data tersimpan di `localStorage` untuk kemudahan pengisian otomatis berikutnya.
-4. **Langkah 4 (Konfirmasi & WhatsApp):** Ringkasan pesanan (tanpa harga). Saat diklik:
-   - Data tersimpan otomatis ke tabel `bookings` di Supabase dengan status `'pending'` dan kode booking unik (misal: `IMB-20261122-A1B2`).
-   - Otomatis membuka chat WhatsApp resmi Bidan dengan format rincian pesanan yang rapi.
-   - Menampilkan modal sukses dengan kode booking dan tombol cepat ke WA.
+2. **Langkah 2 (Tanggal & Slot Jam Real-Time):** Pilih tanggal dan jam operasional. Slot yang telah terisi (`confirmed`) atau ditutup libur admin otomatis nonaktif berlabel *"Penuh"* / *"Libur"*.
+3. **Langkah 3 (Data Bunda & Si Kecil):** Input nama Bunda, kontak WA, anak, usia, alamat lengkap, dan catatan khusus (tersimpan di `localStorage` untuk kemudahan order berikutnya).
+4. **Langkah 4 (Konfirmasi & WhatsApp):** Ringkasan pesanan disimpan ke tabel `bookings` Supabase dengan status `'pending'` dan langsung membuka chat WhatsApp resmi Bidan.
 
-### 3. Panel Admin Khusus Bidan (`/admin`)
-- **Proteksi PIN 6 Digit:** Dilindungi PIN angka tanpa registrasi email rumit (PIN bawaan: `123456`).
-- **Keypad Virtual Anti-Password Prompt:** Mencegah browser memunculkan dialog simpan sandi.
-- **Opsi "Ingat Sesi di Tab Ini"** via `sessionStorage` & tombol Keluar (Logout).
-- **Tab 1: Daftar Reservasi & Jadwal:** Filter tanggal & status (`pending`, `confirmed`, `completed`, `cancelled`), tombol **Konfirmasi Jadwal** (kunci slot publik secara otomatis), **Selesai**, **Batalkan**, tombol **"Kirim Pengingat WA"** (pesan pengingat jadwal H-1 ke Bunda), serta **"+ Tambah Booking Manual"**.
-- **Tab 2: Kelola Layanan:** CRUD lengkap (Tambah layanan baru, edit durasi/usia/deskripsi, toggle aktif/nonaktif, dan hapus layanan).
-- **Tab 3: Tutup Jadwal / Hari Libur (`blocked_slots`):** Form untuk memblokir tanggal tertentu (seharian penuh atau jam spesifik) saat Bidan cuti/praktik luar.
-- **Tab 4: Pengaturan Klinik:** Ubah nomor WhatsApp resmi klinik, alamat, dan ganti PIN Admin 6 digit.
+### 3. Panel Admin Khusus Bidan
+- **Proteksi PIN 6 Digit:** Keypad virtual anti-password manager prompt browser (PIN bawaan: `123456`).
+- **Tab 1: Reservasi & Jadwal:** Filter tanggal & status, konfirmasi slot, batalkan, selesaikan, kirim pengingat WA H-1, dan input booking manual.
+- **Tab 2: Kelola Layanan:** CRUD katalog layanan (tambah, edit, toggle aktif/nonaktif, hapus).
+- **Tab 3: Ulasan & Testimoni:** Kelola ulasan pelanggan, moderasi foto, edit testimoni, dan tambah ulasan manual.
+- **Tab 4: Tutup Jadwal / Hari Libur:** Blokir tanggal/jam tertentu saat cuti.
+- **Tab 5: Pengaturan Klinik:** Update kontak WA, alamat klinik, dan ganti PIN Admin 6 digit.
 
 ---
 
 ## 🗄️ Database Supabase (`supabase/schema.sql`)
 
-Skrip SQL lengkap yang telah ditulis ulang dari awal tersedia di:
+Skrip SQL lengkap yang telah disiapkan tersedia di:
 👉 [supabase/schema.sql](file:///d:/PROJEK%20INDAH%20MOM%20BABY%26SPA/supabase/schema.sql)
 
 ### Struktur Tabel:
-1. `services`: Data 12 katalog treatment resmi, durasi, target usia, `price` opsional (default 0), dan status aktif.
+1. `services`: Data 12 treatment resmi, durasi, target usia, `price` opsional (default 0), dan status aktif.
 2. `bookings`: Data reservasi pasien, kode booking unik, nama Bunda, kontak WA, anak, tanggal, jam, status, dan alamat.
-3. `blocked_slots`: Data tanggal/jam libur yang ditutup oleh Bidan.
-4. `app_settings`: Pengaturan nama klinik, nomor WhatsApp, alamat, dan PIN Admin.
-
-### Keamanan & RPC Functions:
-- **Row Level Security (RLS)** aktif di seluruh tabel.
-- Publik hanya bisa `SELECT` layanan aktif, `SELECT` slot libur, dan `INSERT` reservasi baru.
-- Fungsi RPC `get_booked_slots(target_date)` dengan `SECURITY DEFINER` mengembalikan jam yang telah terkonfirmasi/libur tanpa mengekspos data pribadi pasien lain.
-- Fungsi RPC Admin memvalidasi PIN di sisi database sebelum melakukan perubahan data.
+3. `testimonials`: Data testimoni pelanggan, rating, foto dokumentasi, dan status publikasi.
+4. `blocked_slots`: Data tanggal/jam libur yang ditutup oleh Bidan.
+5. `app_settings`: Pengaturan nama klinik, nomor WhatsApp, alamat, dan PIN Admin.
 
 ---
 
-## 🚀 Panduan Eksekusi di Supabase & Cloudflare Pages
+## 🚀 Panduan Deploy Dual-Project ke Cloudflare Pages
 
-### 1. Terapkan SQL ke Supabase:
-1. Buka dashboard [supabase.com](https://supabase.com).
-2. Masuk ke menu **SQL Editor**.
-3. Buka file [supabase/schema.sql](file:///d:/PROJEK%20INDAH%20MOM%20BABY%26SPA/supabase/schema.sql), salin seluruh kodenya, lalu klik tombol **Run**.
-4. Semua 4 tabel, RLS, 8 RPC functions, dan 12 data layanan resmi akan langsung terbuat dengan sukses.
+Dari **satu repositori GitHub yang sama**, Anda akan membuat **dua project Pages terpisah** di dashboard Cloudflare:
 
-### 2. Hubungkan Proyek ke Supabase:
-Buat file `.env` di root project berdasarkan `.env.example`:
-```env
-VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-### 3. Deploy ke Cloudflare Pages:
-1. Push proyek ke GitHub / GitLab.
-2. Buka dashboard Cloudflare Pages > **Create application** > **Pages** > **Connect to Git**.
-3. Konfigurasi build:
+### Project 1: Web Publik Pelanggan (`indahmombabyspa.com`)
+1. Buka dashboard Cloudflare > **Compute (Workers & Pages)** > **Create application** > **Pages** > **Connect to Git**.
+2. Pilih repositori `Indah-Mom-Baby-Spa-Comal`.
+3. Masukkan konfigurasi build:
+   - **Project Name:** `indah-mom-baby-spa` (atau sesuaikan)
    - **Framework preset:** `Vite`
    - **Build command:** `npm run build`
    - **Build output directory:** `dist`
-4. File `public/_redirects` (`/* /index.html 200`) telah tersedia sehingga navigasi `/admin` bekerja lancar tanpa error 404.
+4. Buka tab **Environment variables (Production & Preview)**, lalu tambahkan:
+   - `VITE_APP_MODE` = `public`
+   - `VITE_SUPABASE_URL` = `https://your-project.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOi...`
+5. Klik **Save and Deploy**.
+6. Hubungkan custom domain `indahmombabyspa.com` pada menu **Custom Domains**.
+
+---
+
+### Project 2: Portal Admin Khusus Bidan (`admin-indahspa.pages.dev`)
+1. Di dashboard Cloudflare Pages, klik kembali **Create application** > **Pages** > **Connect to Git**.
+2. Pilih kembali repositori GitHub yang sama (`Indah-Mom-Baby-Spa-Comal`).
+3. Masukkan konfigurasi build:
+   - **Project Name:** `admin-indahspa`
+   - **Framework preset:** `Vite`
+   - **Build command:** `npm run build`
+   - **Build output directory:** `dist`
+4. Buka tab **Environment variables (Production & Preview)**, lalu tambahkan:
+   - `VITE_APP_MODE` = `admin`
+   - `VITE_SUPABASE_URL` = `https://your-project.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOi...`
+5. Klik **Save and Deploy**.
+6. Project ini akan menghasilkan URL khusus seperti `https://admin-indahspa.pages.dev` yang langsung menampilkan portal PIN Admin di halaman root `/` dengan proteksi `noindex, nofollow`.
+
+---
+
+## 💻 Panduan Pengembangan Lokal
+
+Untuk menjalankan aplikasi secara lokal di komputer pengembang:
+
+```bash
+# 1. Install dependensi
+npm install
+
+# 2. Jalankan development server (mode 'all' aktif secara default)
+npm run dev
+```
+
+Pada mode `all`:
+- Buka `http://localhost:5173/` untuk melihat web pelanggan.
+- Buka `http://localhost:5173/portal-bidan-indah` untuk membuka panel admin.
+
+Untuk mengetes simulasi mode produksi tertentu secara lokal:
+```bash
+# Test Mode Publik saja
+$env:VITE_APP_MODE="public"; npm run build; npm run preview
+
+# Test Mode Admin saja
+$env:VITE_APP_MODE="admin"; npm run build; npm run preview
+```
+
+---
+
+## 🛡️ Aturan Arsitektur & Standar Pengembangan (AI Project Rules)
+
+1. **Dual-Mode Data Layer (LocalStorage Fallback + Supabase Ready):**
+   - Proyek mendukung penyimpanan lokal (`localStorage`) sebagai fallback otomatis agar dapat langsung dites di browser, sekaligus siap beralih otomatis ke Supabase begitu `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` diisi.
+2. **Sinkronisasi Otomatis `supabase/schema.sql`:**
+   - Setiap penambahan atau perubahan struktur tabel, kolom, storage bucket, maupun kebijakan RLS WAJIB langsung dicatat dan diperbarui ke dalam `supabase/schema.sql` menggunakan sintaks idempotent.
+3. **Isolasi & Keamanan Portal Admin (`/portal-bidan-indah`):**
+   - Jangan pernah menampilkan tombol, ikon, atau tautan menuju panel admin di halaman publik pelanggan (`Navbar`, `Footer`, dll.).
+   - Rute `/admin` dan rute tidak dikenal (`*`) wajib di-redirect ke beranda (`/`), dan komponen admin tidak boleh di-render sebelum PIN terverifikasi.
+4. **Standar UI & Responsivitas Mobile:**
+   - Pastikan seluruh halaman bebas *horizontal overflow* di layar HP (`overflow-x-hidden`), tetap menjaga palet warna utama Deep Plum (`#4A154B`), Warm Gold (`#D4AF37`), dan Soft Cream (`#FAF6F0`), serta animasi ringan.
+5. **Arsitektur Dual-Build Mode Cloudflare Pages (`VITE_APP_MODE`):**
+   - Mendukung pemisahan build fisik untuk domain publik (`VITE_APP_MODE=public`) dan portal admin (`VITE_APP_MODE=admin`) dengan eliminasi kode via Rollup tree-shaking dan noindex robot meta tag.

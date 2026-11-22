@@ -62,3 +62,12 @@ export interface SavedCustomerData {
   child_age: string;
   address: string;
 }
+
+export interface Testimonial {
+  id: string;
+  image_url: string;
+  caption?: string;
+  is_active: boolean;
+  created_at?: string;
+}
+

@@ -61,6 +61,18 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
+-- 5. TABEL TESTIMONI WHATSAPP (TESTIMONIALS)
+CREATE TABLE IF NOT EXISTS public.testimonials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    image_url TEXT NOT NULL,
+    caption VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_testimonials_active ON public.testimonials(is_active);
+CREATE INDEX IF NOT EXISTS idx_testimonials_created_at ON public.testimonials(created_at DESC);
+
 -- ====================================================================
 -- SEED DATA AWAL: 12 LAYANAN RESMI KATALOG BARU
 -- ====================================================================
@@ -107,6 +119,7 @@ ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blocked_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
 
 -- 1. Services: Publik bisa melihat semua layanan yang aktif
 DROP POLICY IF EXISTS "Public can view active services" ON public.services;
@@ -131,6 +144,28 @@ DROP POLICY IF EXISTS "Public can view public settings" ON public.app_settings;
 CREATE POLICY "Public can view public settings"
     ON public.app_settings FOR SELECT
     USING (key IN ('clinic_name', 'whatsapp_number', 'clinic_address', 'operating_hours', 'clinic_instagram'));
+
+-- 5. Testimonials: Publik bisa melihat semua foto testimoni yang berstatus aktif
+DROP POLICY IF EXISTS "Public can view active testimonials" ON public.testimonials;
+CREATE POLICY "Public can view active testimonials"
+    ON public.testimonials FOR SELECT
+    USING (is_active = true);
+
+-- Policy admin/anon untuk operasi tabel testimonials
+DROP POLICY IF EXISTS "Allow anon insert testimonials" ON public.testimonials;
+CREATE POLICY "Allow anon insert testimonials"
+    ON public.testimonials FOR INSERT
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow anon update testimonials" ON public.testimonials;
+CREATE POLICY "Allow anon update testimonials"
+    ON public.testimonials FOR UPDATE
+    USING (true);
+
+DROP POLICY IF EXISTS "Allow anon delete testimonials" ON public.testimonials;
+CREATE POLICY "Allow anon delete testimonials"
+    ON public.testimonials FOR DELETE
+    USING (true);
 
 -- ====================================================================
 -- RPC FUNCTIONS (SECURITY DEFINER)
@@ -374,6 +409,57 @@ BEGIN
 END;
 $$;
 
+-- 9. admin_manage_testimonial: Kelola testimoni screenshot WhatsApp
+CREATE OR REPLACE FUNCTION public.admin_manage_testimonial(
+    pin_input text,
+    p_action text, -- 'create', 'update', 'toggle_active', 'delete'
+    p_id uuid DEFAULT NULL,
+    p_image_url text DEFAULT NULL,
+    p_caption text DEFAULT NULL,
+    p_is_active boolean DEFAULT true
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_id uuid;
+BEGIN
+    IF NOT public.verify_admin_pin(pin_input) THEN
+        RAISE EXCEPTION 'Akses ditolak: PIN Admin tidak valid!';
+    END IF;
+
+    IF p_action = 'create' THEN
+        INSERT INTO public.testimonials (image_url, caption, is_active)
+        VALUES (p_image_url, p_caption, COALESCE(p_is_active, true))
+        RETURNING id INTO v_id;
+        RETURN v_id;
+
+    ELSIF p_action = 'update' THEN
+        UPDATE public.testimonials
+        SET image_url = COALESCE(p_image_url, image_url),
+            caption = COALESCE(p_caption, caption),
+            is_active = COALESCE(p_is_active, is_active)
+        WHERE id = p_id;
+        RETURN p_id;
+
+    ELSIF p_action = 'toggle_active' THEN
+        UPDATE public.testimonials
+        SET is_active = NOT is_active
+        WHERE id = p_id;
+        RETURN p_id;
+
+    ELSIF p_action = 'delete' THEN
+        DELETE FROM public.testimonials
+        WHERE id = p_id;
+        RETURN p_id;
+
+    ELSE
+        RAISE EXCEPTION 'Aksi tidak dikenal: %', p_action;
+    END IF;
+END;
+$$;
+
 -- Berikan hak akses eksekusi RPC ke anon & authenticated
 GRANT EXECUTE ON FUNCTION public.get_booked_slots(date) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.verify_admin_pin(text) TO anon, authenticated;
@@ -383,3 +469,32 @@ GRANT EXECUTE ON FUNCTION public.admin_create_manual_booking(text, text, uuid, t
 GRANT EXECUTE ON FUNCTION public.admin_manage_service(text, text, uuid, text, text, text, int, numeric, text, boolean) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_manage_blocked_slot(text, text, uuid, date, text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_update_setting(text, text, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_manage_testimonial(text, text, uuid, text, text, boolean) TO anon, authenticated;
+
+-- ====================================================================
+-- KONFIGURASI SUPABASE STORAGE (BUCKET: testimonials)
+-- ====================================================================
+-- Panduan pembuatan Storage Bucket untuk upload tangkapan layar testimoni:
+-- 1. Buka Supabase Dashboard > Menu "Storage" > Klik tombol "New bucket"
+-- 2. Bucket name: testimonials
+-- 3. Public bucket: AKTIFKAN / ON (Wajib aktif agar foto dapat diakses publik)
+-- 4. Klik "Save bucket"
+--
+-- Atau jalankan query SQL berikut di Supabase SQL Editor:
+-- INSERT INTO storage.buckets (id, name, public)
+-- VALUES ('testimonials', 'testimonials', true)
+-- ON CONFLICT (id) DO UPDATE SET public = true;
+--
+-- Storage Policies (Akses Publik & Admin Upload):
+-- CREATE POLICY "Public Access Testimonials"
+-- ON storage.objects FOR SELECT
+-- USING (bucket_id = 'testimonials');
+--
+-- CREATE POLICY "Allow Upload Testimonials"
+-- ON storage.objects FOR INSERT
+-- WITH CHECK (bucket_id = 'testimonials');
+--
+-- CREATE POLICY "Allow Delete Testimonials"
+-- ON storage.objects FOR DELETE
+-- USING (bucket_id = 'testimonials');
+-- ====================================================================

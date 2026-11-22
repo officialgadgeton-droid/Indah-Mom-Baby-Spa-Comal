@@ -225,13 +225,12 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
           year: 'numeric',
         });
 
-        const waText = 
-`*RESERVASI BARU INDAH MOM & BABY SPA COMAL*
+        const waText =
+          `*RESERVASI BARU INDAH MOM & BABY SPA COMAL*
 ---------------------------------------
 *Kode Booking:* ${result.booking.booking_code}
 *Layanan Treatment:* ${selectedService.name}
 *Kategori:* ${selectedService.category}
-*Estimasi Durasi:* ${selectedService.duration_minutes || 45} Menit
 
 *Tipe Kunjungan:* ${visitType}
 *Hari/Tanggal:* ${formattedDate}
@@ -296,20 +295,18 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                 return (
                   <div key={s.step} className="flex items-center gap-2">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                        isPassed
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${isPassed
                           ? 'bg-emerald-600 text-white'
                           : isActive
-                          ? 'bg-accent text-white shadow-gold scale-110'
-                          : 'bg-white text-charcoal-light border border-slate-300'
-                      }`}
+                            ? 'bg-accent text-white shadow-gold scale-110'
+                            : 'bg-white text-charcoal-light border border-slate-300'
+                        }`}
                     >
                       {isPassed ? <Check className="w-4 h-4" /> : s.step}
                     </div>
                     <span
-                      className={`text-xs font-semibold hidden sm:inline ${
-                        isActive ? 'text-primary font-bold' : 'text-charcoal-light'
-                      }`}
+                      className={`text-xs font-semibold hidden sm:inline ${isActive ? 'text-primary font-bold' : 'text-charcoal-light'
+                        }`}
                     >
                       {s.label}
                     </span>
@@ -335,18 +332,16 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                     <button
                       type="button"
                       onClick={() => setVisitType('Datang ke Klinik')}
-                      className={`flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all ${
-                        visitType === 'Datang ke Klinik'
+                      className={`flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all ${visitType === 'Datang ke Klinik'
                           ? 'border-primary bg-primary/5 shadow-sm'
                           : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          visitType === 'Datang ke Klinik'
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${visitType === 'Datang ke Klinik'
                             ? 'bg-primary text-white'
                             : 'bg-slate-100 text-charcoal'
-                        }`}
+                          }`}
                       >
                         <Building className="w-5 h-5" />
                       </div>
@@ -361,18 +356,16 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                     <button
                       type="button"
                       onClick={() => setVisitType('Homecare - Bidan ke Rumah')}
-                      className={`flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all ${
-                        visitType === 'Homecare - Bidan ke Rumah'
+                      className={`flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all ${visitType === 'Homecare - Bidan ke Rumah'
                           ? 'border-accent bg-accent/5 shadow-sm'
                           : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          visitType === 'Homecare - Bidan ke Rumah'
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${visitType === 'Homecare - Bidan ke Rumah'
                             ? 'bg-accent text-white'
                             : 'bg-slate-100 text-charcoal'
-                        }`}
+                          }`}
                       >
                         <Home className="w-5 h-5" />
                       </div>
@@ -400,11 +393,10 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                         <div
                           key={srv.id}
                           onClick={() => setSelectedServiceId(srv.id)}
-                          className={`cursor-pointer p-4 rounded-2xl border transition-all flex flex-col justify-between ${
-                            isSelected
+                          className={`cursor-pointer p-4 rounded-2xl border transition-all flex flex-col justify-between ${isSelected
                               ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20'
                               : 'border-slate-200 hover:border-slate-300 bg-white'
-                          }`}
+                            }`}
                         >
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -475,7 +467,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                       <div>
                         <strong className="block font-bold">Klinik Libur Penuh pada Tanggal Ini</strong>
                         <span>
-                          {bookedSlots.find(s => s.time === 'ALL')?.reason || 'Jadwal Libur Operasional Bidan'}. 
+                          {bookedSlots.find(s => s.time === 'ALL')?.reason || 'Jadwal Libur Operasional Bidan'}.
                           Silakan pilih tanggal lain di atas.
                         </span>
                       </div>
@@ -492,13 +484,12 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                             type="button"
                             disabled={locked}
                             onClick={() => setSelectedTime(time)}
-                            className={`p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center relative ${
-                              locked
+                            className={`p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center relative ${locked
                                 ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-75'
                                 : isSelected
-                                ? 'bg-primary text-white border-primary shadow-md font-bold'
-                                : 'bg-white border-slate-200 hover:border-primary/50 text-charcoal hover:bg-cream'
-                            }`}
+                                  ? 'bg-primary text-white border-primary shadow-md font-bold'
+                                  : 'bg-white border-slate-200 hover:border-primary/50 text-charcoal hover:bg-cream'
+                              }`}
                           >
                             <div className="flex items-center gap-1.5 text-sm font-bold">
                               <Clock className="w-3.5 h-3.5" />
@@ -506,13 +497,12 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                             </div>
 
                             <span
-                              className={`text-[10px] mt-1 px-2 py-0.5 rounded-full ${
-                                locked
+                              className={`text-[10px] mt-1 px-2 py-0.5 rounded-full ${locked
                                   ? 'bg-rose-100 text-rose-700 font-bold'
                                   : isSelected
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-emerald-100 text-emerald-800 font-medium'
-                              }`}
+                                    ? 'bg-white/20 text-white'
+                                    : 'bg-emerald-100 text-emerald-800 font-medium'
+                                }`}
                             >
                               {locked ? reason : 'Tersedia'}
                             </span>
@@ -727,7 +717,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                   <span>
-                    Saat tombol konfirmasi diklik, sistem akan otomatis mencatat jadwal Bunda di database dan 
+                    Saat tombol konfirmasi diklik, sistem akan otomatis mencatat jadwal Bunda di database dan
                     mengarahkan ke WhatsApp Bidan Indah dengan rincian yang telah diformat rapi.
                   </span>
                 </div>
@@ -793,8 +783,8 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
               </div>
 
               <p className="text-xs text-charcoal-light leading-relaxed">
-                Terima kasih Bunda <strong className="text-primary">{createdBooking.mom_name}</strong>. 
-                Data sudah masuk ke sistem Bidan Indah. Jika WhatsApp belum terbuka secara otomatis, 
+                Terima kasih Bunda <strong className="text-primary">{createdBooking.mom_name}</strong>.
+                Data sudah masuk ke sistem Bidan Indah. Jika WhatsApp belum terbuka secara otomatis,
                 Bunda dapat mengklik tombol di bawah ini:
               </p>
 

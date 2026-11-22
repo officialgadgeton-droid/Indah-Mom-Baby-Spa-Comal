@@ -1,45 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { Service, AppSettings } from './types';
-import { fetchActiveServices, getLocalSettings } from './lib/supabase';
-import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { ServicesSection } from './components/ServicesSection';
-import { AboutSection } from './components/AboutSection';
-import { HowToBookSection } from './components/HowToBookSection';
-import { BookingWizard } from './components/BookingWizard';
-import { TestimonialsSection } from './components/TestimonialsSection';
-import { LocationSection } from './components/LocationSection';
-import { Footer } from './components/Footer';
-import { AdminLogin } from './components/Admin/AdminLogin';
-import { AdminDashboard } from './components/Admin/AdminDashboard';
+import React, { useState, useEffect, Suspense } from 'react';
 import { ToastProvider } from './context/ToastContext';
 
-export const AppContent: React.FC = () => {
-  // Simple client-side routing: '/' vs '/admin'
-  const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname);
-  const [adminPin, setAdminPin] = useState<string | null>(() => {
-    return sessionStorage.getItem('imb_admin_pin');
-  });
+// Dual-Build Mode Configuration
+// Reads VITE_APP_MODE: 'public' | 'admin' | 'all' (default: 'all' during local dev)
+const APP_MODE = (import.meta.env.VITE_APP_MODE as 'public' | 'admin' | 'all') || 'all';
 
-  // Services data for landing page
-  const [services, setServices] = useState<Service[]>([]);
-  const [selectedServicePreset, setSelectedServicePreset] = useState<Service | null>(null);
-  const [settings, setSettings] = useState<AppSettings>(() => getLocalSettings());
+// Dynamic lazy imports: Vite & Rollup perform tree-shaking on dead branches when building
+// with VITE_APP_MODE=public or VITE_APP_MODE=admin, ensuring complete physical bundle isolation.
+const AdminPortal = APP_MODE !== 'public'
+  ? React.lazy(() => import('./components/Admin/AdminPortal'))
+  : null;
+
+const PublicView = APP_MODE !== 'admin'
+  ? React.lazy(() => import('./components/PublicView'))
+  : null;
+
+// Loading Fallback Indicator
+const LoadingSpinner: React.FC<{ message: string }> = ({ message }) => (
+  <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-4">
+    <div className="w-12 h-12 rounded-full border-4 border-accent/20 border-t-accent animate-spin mb-4" />
+    <p className="font-serif text-primary font-medium text-sm animate-pulse">{message}</p>
+  </div>
+);
+
+// 1. ADMIN ONLY APPLICATION (admin-indahspa.pages.dev / dedicated portal)
+const AdminApp: React.FC = () => {
+  useEffect(() => {
+    // Inject noindex, nofollow meta tag automatically
+    let metaRobots = document.querySelector('meta[name="robots"]');
+    if (!metaRobots) {
+      metaRobots = document.createElement('meta');
+      metaRobots.setAttribute('name', 'robots');
+      document.head.appendChild(metaRobots);
+    }
+    metaRobots.setAttribute('content', 'noindex, nofollow');
+    document.title = 'Portal Bidan - Indah Mom & Baby Spa';
+
+    // Normalize path to root
+    if (window.location.pathname !== '/') {
+      window.history.replaceState(null, '', '/');
+    }
+  }, []);
+
+  if (!AdminPortal) return null;
+
+  return (
+    <Suspense fallback={<LoadingSpinner message="Memuat Portal Bidan..." />}>
+      <AdminPortal mode="admin" />
+    </Suspense>
+  );
+};
+
+// 2. PUBLIC ONLY APPLICATION (indahmombabyspa.com)
+const PublicApp: React.FC = () => {
+  useEffect(() => {
+    // Redirect any path other than '/' to home root
+    if (window.location.pathname !== '/') {
+      window.history.replaceState(null, '', '/');
+    }
+  }, []);
+
+  if (!PublicView) return null;
+
+  return (
+    <Suspense fallback={<LoadingSpinner message="Memuat Indah Mom & Baby Spa..." />}>
+      <PublicView />
+    </Suspense>
+  );
+};
+
+// 3. ALL / DUAL-MODE APPLICATION (Local Dev & Temporary Preview)
+const AllApp: React.FC = () => {
+  const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname);
 
   useEffect(() => {
-    // Sync browser back/forward buttons
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  useEffect(() => {
-    fetchActiveServices().then(data => {
-      setServices(data);
-    });
-    setSettings(getLocalSettings());
   }, []);
 
   const navigateTo = (path: string) => {
@@ -48,100 +87,43 @@ export const AppContent: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSelectServiceFromCatalog = (service: Service) => {
-    setSelectedServicePreset(service);
-    const element = document.getElementById('reservasi');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+  const isAdminPath = currentPath === '/portal-bidan-indah';
+
+  useEffect(() => {
+    // If user navigates to '/admin' or any unrecognized path, redirect to '/'
+    if (!isAdminPath && currentPath !== '/') {
+      window.history.replaceState(null, '', '/');
+      setCurrentPath('/');
     }
-  };
+  }, [currentPath, isAdminPath]);
 
-  const handleAdminSuccess = (pin: string) => {
-    setAdminPin(pin);
-  };
-
-  const handleAdminLogout = () => {
-    sessionStorage.removeItem('imb_admin_pin');
-    setAdminPin(null);
-  };
-
-  // If user navigates to /admin
-  const isAdminRoute = currentPath === '/admin' || currentPath.startsWith('/admin');
-
-  if (isAdminRoute) {
-    if (!adminPin) {
-      return (
-        <AdminLogin
-          onSuccess={handleAdminSuccess}
-          onBackToHome={() => navigateTo('/')}
-        />
-      );
-    }
+  if (isAdminPath && AdminPortal) {
     return (
-      <AdminDashboard
-        adminPin={adminPin}
-        onLogout={handleAdminLogout}
-        onBackToHome={() => navigateTo('/')}
-      />
+      <Suspense fallback={<LoadingSpinner message="Memuat Portal Bidan..." />}>
+        <AdminPortal mode="all" onBackToHome={() => navigateTo('/')} />
+      </Suspense>
     );
   }
 
-  // Landing Page View
-  return (
-    <div className="min-h-screen flex flex-col bg-cream text-charcoal">
-      <Navbar
-        onNavigateToAdmin={() => navigateTo('/admin')}
-        onSelectBooking={() => {
-          const el = document.getElementById('reservasi');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }}
-        whatsappNumber={settings.whatsapp_number}
-      />
+  if (PublicView) {
+    return (
+      <Suspense fallback={<LoadingSpinner message="Memuat Indah Mom & Baby Spa..." />}>
+        <PublicView onNavigateToAdmin={() => navigateTo('/portal-bidan-indah')} />
+      </Suspense>
+    );
+  }
 
-      <main className="flex-1">
-        <Hero
-          onBookClick={() => {
-            const el = document.getElementById('reservasi');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          whatsappNumber={settings.whatsapp_number}
-        />
+  return null;
+};
 
-        <ServicesSection
-          services={services}
-          onSelectService={handleSelectServiceFromCatalog}
-        />
-
-        <AboutSection />
-
-        <HowToBookSection />
-
-        <BookingWizard
-          services={services}
-          selectedServicePreset={selectedServicePreset}
-          onClearPreset={() => setSelectedServicePreset(null)}
-          whatsappNumber={settings.whatsapp_number}
-          clinicAddress={settings.clinic_address}
-        />
-
-        <TestimonialsSection />
-
-        <LocationSection
-          clinicAddress={settings.clinic_address}
-          whatsappNumber={settings.whatsapp_number}
-          operatingHours={settings.operating_hours}
-        />
-      </main>
-
-      <Footer
-        onNavigateToAdmin={() => navigateTo('/admin')}
-        clinicAddress={settings.clinic_address}
-        whatsappNumber={settings.whatsapp_number}
-        operatingHours={settings.operating_hours}
-        instagramHandle={settings.clinic_instagram}
-      />
-    </div>
-  );
+export const AppContent: React.FC = () => {
+  if (APP_MODE === 'admin') {
+    return <AdminApp />;
+  }
+  if (APP_MODE === 'public') {
+    return <PublicApp />;
+  }
+  return <AllApp />;
 };
 
 export const App: React.FC = () => {

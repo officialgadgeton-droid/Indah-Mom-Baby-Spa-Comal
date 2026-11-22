@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, ShieldCheck, Heart, Sparkles } from 'lucide-react';
+import { MapPin, Phone, Heart, Sparkles } from 'lucide-react';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
   <svg
@@ -169,14 +169,6 @@ export const Footer: React.FC<FooterProps> = ({
               <Heart className="w-3.5 h-3.5 text-accent fill-accent" />
               <span>for Bunda & Si Kecil</span>
             </span>
-
-            <button
-              onClick={onNavigateToAdmin}
-              className="flex items-center gap-1 text-white/50 hover:text-accent transition-colors text-[11px]"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Area Bidan / Admin</span>
-            </button>
           </div>
         </div>
       </div>
