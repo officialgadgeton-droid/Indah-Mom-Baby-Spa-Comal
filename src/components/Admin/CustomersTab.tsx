@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Booking } from '../../types';
-import { fetchAdminBookings } from '../../lib/supabase';
+import { fetchAdminBookings, getAdminSessionPin } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 import {
   Users,
@@ -73,18 +73,22 @@ export function formatPhoneDisplay(raw: string): string {
 }
 
 export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
-  const { error } = useToast();
+  const { success, error } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'loyal' | 'new'>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregatedCustomer | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (showToast: boolean = false) => {
     setIsLoading(true);
     try {
-      const data = await fetchAdminBookings(adminPin);
+      const activePin = (adminPin && adminPin.trim()) || getAdminSessionPin();
+      const data = await fetchAdminBookings(activePin, undefined, 'all');
       setBookings(data);
+      if (showToast) {
+        success('Data pelanggan berhasil disinkronkan dari database Supabase.');
+      }
     } catch (e) {
       console.error(e);
       error('Gagal memuat data pelanggan dari riwayat reservasi.');
@@ -119,35 +123,50 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
         return dateB - dateA;
       });
 
-      const latestBooking = sorted[0];
+      // Hitung semua status aktif (pending, confirmed, dan completed — kecuali cancelled)
+      // agar pelanggan yang baru saja booking (status pending) langsung muncul sebagai pelanggan terdaftar
+      const activeBookings = sorted.filter(b => b.status !== 'cancelled');
+
+      // Jika seluruh booking dibatalkan (cancelled), lewati agar tidak mengotori daftar pelanggan aktif
+      if (activeBookings.length === 0) {
+        return;
+      }
+
+      // Ambil data terbaru dari reservasi aktif (termasuk status pending yang baru saja dikirim Bunda)
+      const latestActive = activeBookings[0];
 
       // Cari nama anak dan usia anak terbaru yang tidak kosong
-      const childWithData = sorted.find(b => b.child_name && b.child_name.trim().length > 0);
-      const addressWithData = sorted.find(b => b.address && b.address.trim().length > 0);
+      const childWithData =
+        activeBookings.find(b => b.child_name && b.child_name.trim().length > 0) ||
+        sorted.find(b => b.child_name && b.child_name.trim().length > 0);
+      const addressWithData =
+        activeBookings.find(b => b.address && b.address.trim().length > 0) ||
+        sorted.find(b => b.address && b.address.trim().length > 0);
 
       // Hitung kunjungan selesai atau terkonfirmasi
-      const completedOrConfirmed = sorted.filter(
+      const completedOrConfirmed = activeBookings.filter(
         b => b.status === 'completed' || b.status === 'confirmed'
       ).length;
 
-      // Pelanggan tetap jika kunjungan selesai/terkonfirmasi >= 2 (atau total reservasi non-cancelled >= 2)
-      const validTotal = sorted.filter(b => b.status !== 'cancelled').length;
-      const isLoyal = completedOrConfirmed >= 2 || validTotal >= 2;
+      // Status loyalitas: Pelanggan Tetap jika kunjungan selesai/terkonfirmasi >= 2
+      const isLoyal = completedOrConfirmed >= 2;
 
-      // Kumpulan nama layanan unik
-      const uniqueServices = Array.from(new Set(sorted.map(b => b.service_name).filter(Boolean)));
+      // Kumpulan nama layanan unik yang pernah diambil
+      const uniqueServices = Array.from(
+        new Set(activeBookings.map(b => b.service_name).filter(Boolean))
+      );
 
       result.push({
         normalizedPhone: normKey,
-        whatsappNumber: latestBooking.whatsapp_number,
-        momName: latestBooking.mom_name,
+        whatsappNumber: latestActive.whatsapp_number,
+        momName: latestActive.mom_name,
         childName: childWithData?.child_name,
         childAge: childWithData?.child_age,
         lastAddress: addressWithData?.address,
-        totalBookings: sorted.length,
+        totalBookings: activeBookings.length,
         completedOrConfirmedCount: completedOrConfirmed,
         isLoyal,
-        lastVisitDate: latestBooking.booking_date,
+        lastVisitDate: latestActive.booking_date,
         servicesTaken: uniqueServices,
         bookingsHistory: sorted,
       });
@@ -321,8 +340,8 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
             </button>
 
             <button
-              onClick={loadData}
-              title="Perbarui Data"
+              onClick={() => loadData(true)}
+              title="Perbarui Data dari Supabase"
               className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-charcoal-light hover:text-primary transition-all shrink-0"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />

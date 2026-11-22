@@ -273,7 +273,9 @@ export async function createBooking(
 
   if (supabase) {
     try {
-      const { data, error } = await supabase
+      // PENTING: Pengunjung publik anonim HANYA memiliki izin INSERT pada tabel bookings (RLS).
+      // DILARANG menambahkan .select() setelah .insert() karena operasi SELECT dibatasi untuk peran authenticated!
+      const { error } = await supabase
         .from('bookings')
         .insert([
           {
@@ -292,22 +294,21 @@ export async function createBooking(
             notes: newBooking.notes || null,
             status: newBooking.status || 'pending',
           },
-        ])
-        .select()
-        .single();
+        ]);
 
-      if (!error && data) {
-        return { success: true, booking: data as Booking };
+      if (error) {
+        console.error('Gagal insert reservasi ke Supabase (RLS / Network Error):', error.message || error);
       }
-      console.warn('Gagal insert ke Supabase, fallback ke penyimpanan lokal:', error);
     } catch (e) {
-      console.warn('Supabase booking error:', e);
+      console.error('Exception saat insert reservasi ke Supabase:', e);
     }
   }
 
+  // Simpan selalu salinan ke localStorage agar sinkron di mode lokal / fallback
   const bookings = getLocalBookings();
   bookings.unshift(newBooking);
   localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+
   return { success: true, booking: newBooking };
 }
 
@@ -463,15 +464,20 @@ export async function fetchAdminBookings(
   filterDate?: string,
   filterStatus?: string
 ): Promise<Booking[]> {
+  const validPin = (pin && pin.trim()) || getAdminSessionPin();
+
   if (supabase) {
     try {
       const { data, error } = await supabase.rpc('get_admin_bookings', {
-        pin_input: pin,
+        pin_input: validPin,
         p_date: filterDate || null,
-        p_status: filterStatus === 'all' ? null : filterStatus || null,
+        p_status: filterStatus === 'all' || !filterStatus ? null : filterStatus,
       });
       if (!error && data) {
         return data as Booking[];
+      }
+      if (error) {
+        console.warn('RPC get_admin_bookings error:', error.message || error);
       }
     } catch (e) {
       console.warn('RPC get_admin_bookings error, fallback local:', e);

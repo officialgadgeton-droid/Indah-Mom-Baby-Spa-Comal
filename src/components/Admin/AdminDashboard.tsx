@@ -12,7 +12,7 @@ import {
   MessageSquareHeart,
   Users,
 } from 'lucide-react';
-import { isSupabaseConfigured } from '../../lib/supabase';
+import { isSupabaseConfigured, getAdminSessionPin } from '../../lib/supabase';
 import { BookingsTab } from './BookingsTab';
 import { CustomersTab } from './CustomersTab';
 import { ServicesTab } from './ServicesTab';
@@ -40,6 +40,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onBackToHome,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('bookings');
+  const activeAdminPin = (adminPin && adminPin.trim()) || getAdminSessionPin();
 
   return (
     <div className="min-h-screen bg-cream flex flex-col">
@@ -184,12 +185,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-        {activeTab === 'bookings' && <BookingsTab adminPin={adminPin} />}
-        {activeTab === 'customers' && <CustomersTab adminPin={adminPin} />}
-        {activeTab === 'services' && <ServicesTab adminPin={adminPin} />}
-        {activeTab === 'testimonials' && <TestimonialsTab adminPin={adminPin} />}
-        {activeTab === 'blocked' && <BlockedSlotsTab adminPin={adminPin} />}
-        {activeTab === 'settings' && <SettingsTab adminPin={adminPin} />}
+        {activeTab === 'bookings' && <BookingsTab adminPin={activeAdminPin} />}
+        {activeTab === 'customers' && <CustomersTab adminPin={activeAdminPin} />}
+        {activeTab === 'services' && <ServicesTab adminPin={activeAdminPin} />}
+        {activeTab === 'testimonials' && <TestimonialsTab adminPin={activeAdminPin} />}
+        {activeTab === 'blocked' && <BlockedSlotsTab adminPin={activeAdminPin} />}
+        {activeTab === 'settings' && <SettingsTab adminPin={activeAdminPin} />}
       </main>
     </div>
   );

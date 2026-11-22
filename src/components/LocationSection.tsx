@@ -11,7 +11,7 @@ interface LocationSectionProps {
 export const LocationSection: React.FC<LocationSectionProps> = ({
   clinicAddress = 'Ds. Purwosari Dusun VI 47 RT 001/017, Dusun III, Pecangakan, Kec. Comal, Kabupaten Pemalang, Jawa Tengah 52363',
   whatsappNumber = '0878-5696-0422',
-  operatingHours = 'Buka setiap hari hingga pukul 19.00 WIB',
+  operatingHours = 'Buka setiap hari hingga pukul 18.00 WIB',
 }) => {
   const cleanDigits = whatsappNumber.replace(/[^0-9]/g, '');
   const waLink = cleanDigits.startsWith('0') ? '62' + cleanDigits.slice(1) : cleanDigits;

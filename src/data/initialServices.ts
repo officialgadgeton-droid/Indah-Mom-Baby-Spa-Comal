@@ -143,6 +143,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   whatsapp_number: '6287856960422',
   clinic_address: 'Ds. Purwosari Dusun VI 47 RT 001/017, Dusun III, Pecangakan, Kec. Comal, Kabupaten Pemalang, Jawa Tengah 52363',
   admin_pin: '123456',
-  operating_hours: 'Buka setiap hari hingga pukul 19.00 WIB',
+  operating_hours: 'Buka setiap hari hingga pukul 18.00 WIB',
   clinic_instagram: '@indahmombabyspa_comal',
 };

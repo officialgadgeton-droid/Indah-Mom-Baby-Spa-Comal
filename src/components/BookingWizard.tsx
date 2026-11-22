@@ -327,10 +327,10 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                   <div key={s.step} className="flex items-center gap-2">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${isPassed
-                          ? 'bg-emerald-600 text-white'
-                          : isActive
-                            ? 'bg-accent text-white shadow-gold scale-110'
-                            : 'bg-white text-charcoal-light border border-slate-300'
+                        ? 'bg-emerald-600 text-white'
+                        : isActive
+                          ? 'bg-accent text-white shadow-gold scale-110'
+                          : 'bg-white text-charcoal-light border border-slate-300'
                         }`}
                     >
                       {isPassed ? <Check className="w-4 h-4" /> : s.step}
@@ -364,14 +364,14 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                       type="button"
                       onClick={() => setVisitType('Datang ke Klinik')}
                       className={`flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all ${visitType === 'Datang ke Klinik'
-                          ? 'border-primary bg-primary/5 shadow-sm'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                     >
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${visitType === 'Datang ke Klinik'
-                            ? 'bg-primary text-white'
-                            : 'bg-slate-100 text-charcoal'
+                          ? 'bg-primary text-white'
+                          : 'bg-slate-100 text-charcoal'
                           }`}
                       >
                         <Building className="w-5 h-5" />
@@ -388,14 +388,14 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                       type="button"
                       onClick={() => setVisitType('Homecare - Bidan ke Rumah')}
                       className={`flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all ${visitType === 'Homecare - Bidan ke Rumah'
-                          ? 'border-accent bg-accent/5 shadow-sm'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                        ? 'border-accent bg-accent/5 shadow-sm'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                     >
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${visitType === 'Homecare - Bidan ke Rumah'
-                            ? 'bg-accent text-white'
-                            : 'bg-slate-100 text-charcoal'
+                          ? 'bg-accent text-white'
+                          : 'bg-slate-100 text-charcoal'
                           }`}
                       >
                         <Home className="w-5 h-5" />
@@ -425,8 +425,8 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                           key={srv.id}
                           onClick={() => setSelectedServiceId(srv.id)}
                           className={`cursor-pointer p-4 rounded-2xl border transition-all flex flex-col justify-between ${isSelected
-                              ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20'
-                              : 'border-slate-200 hover:border-slate-300 bg-white'
+                            ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
                             }`}
                         >
                           <div>
@@ -476,7 +476,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                     />
                   </div>
                   <p className="text-xs text-charcoal-light mt-1.5">
-                    *Klinik beroperasi setiap hari hingga pukul 19.00 WIB.
+                    *Klinik beroperasi setiap hari hingga pukul 18.00 WIB.
                   </p>
                 </div>
 
@@ -516,10 +516,10 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                             disabled={locked}
                             onClick={() => setSelectedTime(time)}
                             className={`p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center relative ${locked
-                                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-75'
-                                : isSelected
-                                  ? 'bg-primary text-white border-primary shadow-md font-bold'
-                                  : 'bg-white border-slate-200 hover:border-primary/50 text-charcoal hover:bg-cream'
+                              ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-75'
+                              : isSelected
+                                ? 'bg-primary text-white border-primary shadow-md font-bold'
+                                : 'bg-white border-slate-200 hover:border-primary/50 text-charcoal hover:bg-cream'
                               }`}
                           >
                             <div className="flex items-center gap-1.5 text-sm font-bold">
@@ -529,10 +529,10 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
 
                             <span
                               className={`text-[10px] mt-1 px-2 py-0.5 rounded-full ${locked
-                                  ? 'bg-rose-100 text-rose-700 font-bold'
-                                  : isSelected
-                                    ? 'bg-white/20 text-white'
-                                    : 'bg-emerald-100 text-emerald-800 font-medium'
+                                ? 'bg-rose-100 text-rose-700 font-bold'
+                                : isSelected
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-emerald-100 text-emerald-800 font-medium'
                                 }`}
                             >
                               {locked ? reason : 'Tersedia'}
