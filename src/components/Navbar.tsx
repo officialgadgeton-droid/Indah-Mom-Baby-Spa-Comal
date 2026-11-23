@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Calendar, Sparkles } from 'lucide-react';
+import { Menu, X, Calendar, Sparkles, Clock, AlertCircle, MessageCircle } from 'lucide-react';
+import { ClinicOperationalStatus } from '../types';
 
 interface NavbarProps {
   onNavigateToAdmin?: () => void;
   onSelectBooking?: () => void;
   whatsappNumber?: string;
+  operationalStatus?: ClinicOperationalStatus;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onSelectBooking,
+  whatsappNumber = '6287856960422',
+  operationalStatus,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const cleanDigits = whatsappNumber.replace(/[^0-9]/g, '');
+  const cleanWa = cleanDigits.startsWith('0') ? '62' + cleanDigits.slice(1) : cleanDigits;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,15 +37,64 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-primary/10 py-3'
-          : 'bg-cream/90 backdrop-blur-sm py-4 border-b border-primary/5'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-2 md:gap-4">
+    <header className="fixed top-0 left-0 right-0 z-40 transition-all duration-300">
+      {/* Banner Status Operasional Real-Time (Homecare / Tutup Hari Ini) */}
+      {operationalStatus && operationalStatus.status !== 'open' && (
+        <div
+          className={`py-2 px-3 sm:px-6 text-xs font-medium text-white shadow-sm transition-all ${
+            operationalStatus.status === 'busy_homecare'
+              ? 'bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 border-b border-amber-800/20'
+              : 'bg-gradient-to-r from-rose-700 via-rose-600 to-rose-700 border-b border-rose-800/20'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              {operationalStatus.status === 'busy_homecare' ? (
+                <Clock className="w-4 h-4 shrink-0 animate-pulse text-amber-200" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-200" />
+              )}
+              <div className="truncate text-[11px] sm:text-xs">
+                <strong className="font-bold">
+                  {operationalStatus.status === 'busy_homecare'
+                    ? 'Bidan Sedang Kunjungan Homecare / Persalinan:'
+                    : 'Pemberitahuan Praktik:'}
+                </strong>{' '}
+                <span>
+                  {operationalStatus.note ||
+                    (operationalStatus.status === 'busy_homecare'
+                      ? 'Reservasi online tetap dibuka, konfirmasi jadwal & kunjungan akan dihubungi via WA.'
+                      : 'Klinik hari ini tutup sementara. Bunda tetap dapat membuat reservasi untuk hari berikutnya.')}
+                </span>
+              </div>
+            </div>
+
+            <a
+              href={`https://wa.me/${cleanWa}?text=${encodeURIComponent(
+                operationalStatus.status === 'busy_homecare'
+                  ? 'Halo Bidan Indah, saya ingin bertanya terkait jadwal reservasi / homecare hari ini.'
+                  : 'Halo Bidan Indah, saya ingin konsultasi terkait jadwal perawatan Si Kecil.'
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-full transition-colors whitespace-nowrap shrink-0 shadow-xs"
+            >
+              <MessageCircle className="w-3 h-3" />
+              <span>Hubungi WA</span>
+            </a>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`transition-all duration-300 ${
+          isScrolled
+            ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-primary/10 py-3'
+            : 'bg-cream/90 backdrop-blur-sm py-4 border-b border-primary/5'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-2 md:gap-4">
           {/* Logo & Brand Name */}
           <a
             href="/"
@@ -141,6 +197,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       </div>
+    </div>
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (

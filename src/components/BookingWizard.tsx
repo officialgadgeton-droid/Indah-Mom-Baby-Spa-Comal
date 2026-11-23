@@ -4,6 +4,7 @@ import {
   VisitType,
   SavedCustomerData,
   Booking,
+  ClinicOperationalStatus,
 } from '../types';
 import { OPERATING_SLOTS, TIME_SESSION_OPTIONS } from '../data/initialServices';
 import {
@@ -39,12 +40,14 @@ interface BookingWizardProps {
   onClearPreset?: () => void;
   whatsappNumber?: string;
   clinicAddress?: string;
+  operationalStatus?: ClinicOperationalStatus;
 }
 
 export const BookingWizard: React.FC<BookingWizardProps> = ({
   services,
   selectedServicePreset,
   whatsappNumber = '6287856960422',
+  operationalStatus,
 }) => {
   const { success, error, warning } = useToast();
   const cleanDigits = whatsappNumber.replace(/[^0-9]/g, '');
@@ -366,6 +369,63 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
 
         {/* Wizard Container Card */}
         <div className="bg-white rounded-3xl shadow-card border border-primary/10 overflow-hidden">
+          {/* Banner Pemberitahuan Status Operasional (Homecare / Tutup Hari Ini) */}
+          {operationalStatus && operationalStatus.status !== 'open' && (
+            <div
+              className={`p-4 sm:p-5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                operationalStatus.status === 'busy_homecare'
+                  ? 'bg-amber-50/90 border-amber-200 text-amber-950'
+                  : 'bg-rose-50/90 border-rose-200 text-rose-950'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    operationalStatus.status === 'busy_homecare'
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-rose-600 text-white'
+                  }`}
+                >
+                  {operationalStatus.status === 'busy_homecare' ? (
+                    <Clock className="w-5 h-5 animate-pulse" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm leading-tight">
+                    {operationalStatus.status === 'busy_homecare'
+                      ? 'Informasi: Bidan Sedang Bertugas Homecare / Membantu Persalinan'
+                      : 'Pemberitahuan: Praktik Hari Ini Tutup Sementara'}
+                  </h4>
+                  <p className="text-xs text-charcoal/80 mt-1 leading-relaxed">
+                    {operationalStatus.note ||
+                      (operationalStatus.status === 'busy_homecare'
+                        ? 'Bunda tetap dipersilakan memilih layanan dan mengirim formulir reservasi. Jadwal kedatangan dan jam final akan dikonfirmasi langsung oleh Bidan melalui WhatsApp.'
+                        : 'Klinik hari ini sedang libur praktik. Bunda tetap dapat membuat pemesanan jadwal untuk hari-hari berikutnya.')}
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href={`https://wa.me/${cleanDigits}?text=${encodeURIComponent(
+                  operationalStatus.status === 'busy_homecare'
+                    ? 'Halo Bidan Indah, saya ingin memastikan ketersediaan jadwal hari ini.'
+                    : 'Halo Bidan Indah, saya ingin konsultasi mengenai jadwal perawatan Si Kecil.'
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold shadow-xs whitespace-nowrap self-start sm:self-center transition-colors ${
+                  operationalStatus.status === 'busy_homecare'
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-rose-600 hover:bg-rose-700 text-white'
+                }`}
+              >
+                <span>Konsultasi WA Langsung</span>
+              </a>
+            </div>
+          )}
+
           {/* Progress Bar Header */}
           <div className="bg-primary/5 border-b border-primary/10 px-4 sm:px-8 py-5">
             <div className="flex items-center justify-between max-w-2xl mx-auto">

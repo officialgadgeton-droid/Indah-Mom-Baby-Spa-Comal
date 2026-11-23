@@ -5,6 +5,7 @@ import {
   updateBookingStatus,
   adminDeleteBooking,
   fetchAllServicesAdmin,
+  adminSaveTreatmentNote,
 } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 import {
@@ -21,6 +22,12 @@ import {
   Trash2,
   Clock,
   Check,
+  ClipboardList,
+  Baby,
+  Scale,
+  Heart,
+  Edit3,
+  FileText,
 } from 'lucide-react';
 import { ManualBookingModal } from './ManualBookingModal';
 import { PinConfirmModal } from './PinConfirmModal';
@@ -47,6 +54,13 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ adminPin }) => {
   // Penyesuaian jam final oleh Bidan
   const [adjustingBookingId, setAdjustingBookingId] = useState<string | null>(null);
   const [adjustedTimeInput, setAdjustedTimeInput] = useState<string>('');
+
+  // Modal Rekam Tindakan Bidan & Perkembangan Bayi
+  const [treatmentModalBooking, setTreatmentModalBooking] = useState<Booking | null>(null);
+  const [treatmentNotesInput, setTreatmentNotesInput] = useState<string>('');
+  const [babyWeightInput, setBabyWeightInput] = useState<string>('');
+  const [markCompletedInput, setMarkCompletedInput] = useState<boolean>(true);
+  const [isSavingTreatment, setIsSavingTreatment] = useState<boolean>(false);
 
   const QUICK_TIME_PRESETS = [
     '08:30 WIB',
@@ -220,6 +234,70 @@ Mengingatkan kembali jadwal perawatan untuk Bunda / Si Kecil tercinta:
 - *Tipe:* ${booking.visit_type}
 ${booking.address ? `- *Alamat Homecare:* ${booking.address}\n` : ''}
 Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang rewel, silakan kabari kami. Terima kasih banyak Bunda! ❤️`;
+
+    window.open(`https://wa.me/${cleanWa}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  const handleOpenTreatmentModal = (booking: Booking) => {
+    setTreatmentModalBooking(booking);
+    setTreatmentNotesInput(booking.treatment_notes || '');
+    setBabyWeightInput(booking.baby_weight_kg || '');
+    setMarkCompletedInput(booking.status !== 'completed');
+  };
+
+  const handleSaveTreatmentNote = async () => {
+    if (!treatmentModalBooking) return;
+    if (!treatmentNotesInput.trim() && !babyWeightInput.trim()) {
+      error('Silakan isi catatan tindakan atau berat badan Si Kecil.');
+      return;
+    }
+
+    setIsSavingTreatment(true);
+    try {
+      const ok = await adminSaveTreatmentNote(
+        adminPin,
+        treatmentModalBooking.id,
+        treatmentNotesInput,
+        babyWeightInput,
+        markCompletedInput
+      );
+
+      if (ok) {
+        success(
+          `Rekam tindakan untuk ${treatmentModalBooking.mom_name} berhasil disimpan${
+            markCompletedInput ? ' & status ditandai selesai' : ''
+          }!`
+        );
+        setTreatmentModalBooking(null);
+        await loadData();
+      } else {
+        error('Gagal menyimpan rekam tindakan.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      error(err.message || 'Terjadi kesalahan saat menyimpan rekam tindakan.');
+    } finally {
+      setIsSavingTreatment(false);
+    }
+  };
+
+  const handleSendFollowUpH1 = (booking: Booking) => {
+    const cleanNumber = booking.whatsapp_number.replace(/[^0-9]/g, '');
+    const cleanWa = cleanNumber.startsWith('0')
+      ? '62' + cleanNumber.substring(1)
+      : cleanNumber;
+
+    const childGreeting = booking.child_name ? ` dan Si Kecil *${booking.child_name}*` : '';
+    const childMention = booking.child_name ? `Si Kecil *${booking.child_name}*` : 'Si Kecil';
+
+    const msg =
+`Halo Bunda *${booking.mom_name}* 🌸
+Salam hangat dan kasih dari Bidan Indah (*Indah Mom & Baby Spa Comal*).
+
+Bagaimana kabar Bunda${childGreeting} hari ini setelah kemarin melakukan perawatan *${booking.service_name}*?
+Apakah tidur ${childMention} semalam lebih nyenyak dan badannya terasa lebih rileks & nyaman Bunda?
+
+Jika ada keluhan atau ada hal yang ingin Bunda tanyakan seputar kondisi Si Kecil, jangan ragu kabari kami ya. Semoga Bunda dan keluarga senantiasa sehat selalu! ❤️`;
 
     window.open(`https://wa.me/${cleanWa}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -468,6 +546,29 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
                         </div>
                       )}
 
+                      {/* Rekam Tindakan Bidan & Berat Badan Si Kecil */}
+                      {(bk.treatment_notes || bk.baby_weight_kg) && (
+                        <div className="sm:col-span-2 p-3 rounded-xl bg-purple-50/70 border border-purple-200/80 space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-primary flex items-center gap-1.5">
+                              <ClipboardList className="w-3.5 h-3.5 text-accent" />
+                              Rekam Tindakan Bidan
+                            </span>
+                            {bk.baby_weight_kg && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-primary font-bold text-[11px]">
+                                <Scale className="w-3 h-3 text-accent" />
+                                <span>BB: {bk.baby_weight_kg}</span>
+                              </span>
+                            )}
+                          </div>
+                          {bk.treatment_notes && (
+                            <p className="text-charcoal leading-relaxed text-[11px]">
+                              {bk.treatment_notes}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       {/* Panel Penyesuaian Jam Final Bidan */}
                       {adjustingBookingId === bk.id && (
                         <div className="sm:col-span-2 p-4 rounded-2xl bg-gradient-to-r from-amber-50/90 via-[#FAF6F0] to-accent/10 border-2 border-accent/40 shadow-sm space-y-3 animate-fade-in mt-1">
@@ -569,27 +670,51 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
                       </button>
                     )}
 
-                    {/* Selesai */}
+                    {/* Catatan Bidan / Tandai Selesai */}
+                    <button
+                      onClick={() => handleOpenTreatmentModal(bk)}
+                      className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-primary font-bold text-xs border border-purple-200 transition-colors shadow-xs"
+                      title="Rekam tindakan bidan, catat berat badan anak, dan selesaikan treatment"
+                    >
+                      <ClipboardList className="w-3.5 h-3.5 text-accent-dark" />
+                      <span>{bk.treatment_notes ? 'Ubah Catatan Bidan' : 'Catatan Bidan / Selesai'}</span>
+                    </button>
+
+                    {/* Selesai Cepat */}
                     {bk.status === 'confirmed' && (
                       <button
                         onClick={() => handleUpdateStatus(bk.id, 'completed')}
                         className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-700 text-white font-bold text-xs transition-colors"
-                        title="Tandai selesai treatment"
+                        title="Tandai selesai treatment secara instan"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Tandai Selesai</span>
                       </button>
                     )}
 
-                    {/* Kirim Pengingat WA */}
-                    <button
-                      onClick={() => handleSendReminderWA(bk)}
-                      className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-xs border border-emerald-300 transition-colors"
-                      title="Buka WA untuk kirim pesan pengingat jadwal H-1"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Kirim Pengingat WA</span>
-                    </button>
+                    {/* Follow-up WA H+1 Pasca Treatment */}
+                    {bk.status === 'completed' && (
+                      <button
+                        onClick={() => handleSendFollowUpH1(bk)}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-50 hover:bg-pink-100 text-pink-800 font-bold text-xs border border-pink-300 transition-colors shadow-xs"
+                        title="Kirim pesan WhatsApp ramah menanyakan kondisi tidur dan tubuh Si Kecil H+1 pasca treatment"
+                      >
+                        <Heart className="w-3.5 h-3.5 text-pink-600 fill-pink-500" />
+                        <span>Tanya Kondisi (WA H+1)</span>
+                      </button>
+                    )}
+
+                    {/* Kirim Pengingat WA H-1 */}
+                    {bk.status !== 'completed' && bk.status !== 'cancelled' && (
+                      <button
+                        onClick={() => handleSendReminderWA(bk)}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-xs border border-emerald-300 transition-colors"
+                        title="Buka WA untuk kirim pesan pengingat jadwal H-1"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Kirim Pengingat WA</span>
+                      </button>
+                    )}
 
                     {/* Batalkan */}
                     {bk.status !== 'cancelled' && (
@@ -675,6 +800,102 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
             await loadData();
           }}
         />
+      )}
+
+      {/* Modal Rekam Tindakan & Catatan Perkembangan Bayi */}
+      {treatmentModalBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-bounce-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-primary/20 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-primary flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 text-accent-dark" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-primary">
+                    Rekam Tindakan Bidan
+                  </h3>
+                  <p className="text-xs text-charcoal-light">
+                    {treatmentModalBooking.mom_name}{' '}
+                    {treatmentModalBooking.child_name ? `• ${treatmentModalBooking.child_name}` : ''} ({treatmentModalBooking.service_name})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTreatmentModalBooking(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-primary mb-1 flex items-center gap-1.5">
+                  <Scale className="w-3.5 h-3.5 text-accent" />
+                  Berat Badan Si Kecil Saat Treatment (Opsional):
+                </label>
+                <input
+                  type="text"
+                  value={babyWeightInput}
+                  onChange={(e) => setBabyWeightInput(e.target.value)}
+                  placeholder="Contoh: 6.8 kg atau 7.2 kg"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-charcoal font-medium bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-primary mb-1 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-accent" />
+                  Catatan Tindakan, Keluhan &amp; Respons Bayi:
+                </label>
+                <textarea
+                  rows={4}
+                  value={treatmentNotesInput}
+                  onChange={(e) => setTreatmentNotesInput(e.target.value)}
+                  placeholder="Contoh: Batuk pilek mulai reda, pijat difokuskan area dada & punggung, relaksasi otot kaki, tidur lebih nyenyak."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-charcoal leading-relaxed bg-white"
+                />
+              </div>
+
+              <div className="p-3 rounded-2xl bg-cream/70 border border-primary/10 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="markCompletedCheckbox"
+                  checked={markCompletedInput}
+                  onChange={(e) => setMarkCompletedInput(e.target.checked)}
+                  className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary"
+                />
+                <label
+                  htmlFor="markCompletedCheckbox"
+                  className="text-xs text-charcoal cursor-pointer font-semibold select-none"
+                >
+                  Tandai Reservasi Ini Sebagai Selesai Treatment (Completed)
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setTreatmentModalBooking(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-charcoal hover:bg-slate-100"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTreatmentNote}
+                disabled={isSavingTreatment}
+                className="flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-primary-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>{isSavingTreatment ? 'Menyimpan...' : 'Simpan Rekam Tindakan'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

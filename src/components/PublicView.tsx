@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Service, AppSettings } from '../types';
-import { fetchActiveServices, getLocalSettings, supabase } from '../lib/supabase';
+import { Service, AppSettings, ClinicOperationalStatus } from '../types';
+import {
+  fetchActiveServices,
+  getLocalSettings,
+  fetchClinicOperationalStatus,
+  supabase,
+} from '../lib/supabase';
 import { Navbar } from './Navbar';
 import { Hero } from './Hero';
 import { ServicesSection } from './ServicesSection';
@@ -19,6 +24,10 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
   const [services, setServices] = useState<Service[]>([]);
   const [selectedServicePreset, setSelectedServicePreset] = useState<Service | null>(null);
   const [settings, setSettings] = useState<AppSettings>(() => getLocalSettings());
+  const [operationalStatus, setOperationalStatus] = useState<ClinicOperationalStatus>({
+    status: 'open',
+    note: '',
+  });
 
   useEffect(() => {
     const loadServices = () => {
@@ -27,16 +36,37 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
       });
     };
 
+    const loadOpStatus = () => {
+      fetchClinicOperationalStatus().then(data => {
+        if (data) setOperationalStatus(data);
+      });
+    };
+
     loadServices();
+    loadOpStatus();
     setSettings(getLocalSettings());
 
     const handleUpdate = () => loadServices();
-    window.addEventListener('indah_spa_services_updated', handleUpdate);
-    window.addEventListener('storage', handleUpdate);
+    const handleOpUpdate = (e: any) => {
+      if (e.detail) {
+        setOperationalStatus(e.detail);
+      } else {
+        loadOpStatus();
+      }
+    };
 
-    let channel: any = null;
+    window.addEventListener('indah_spa_services_updated', handleUpdate);
+    window.addEventListener('indah_spa_operational_status_updated', handleOpUpdate);
+    window.addEventListener('storage', () => {
+      handleUpdate();
+      loadOpStatus();
+    });
+
+    let serviceChannel: any = null;
+    let settingsChannel: any = null;
+
     if (supabase) {
-      channel = supabase
+      serviceChannel = supabase
         .channel('public_view_services_realtime')
         .on(
           'postgres_changes',
@@ -46,13 +76,28 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
           }
         )
         .subscribe();
+
+      settingsChannel = supabase
+        .channel('public_view_clinic_settings_realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'clinic_settings' },
+          () => {
+            loadOpStatus();
+          }
+        )
+        .subscribe();
     }
 
     return () => {
       window.removeEventListener('indah_spa_services_updated', handleUpdate);
-      window.removeEventListener('storage', handleUpdate);
-      if (channel && supabase) {
-        supabase.removeChannel(channel);
+      window.removeEventListener('indah_spa_operational_status_updated', handleOpUpdate);
+      window.removeEventListener('storage', loadOpStatus);
+      if (serviceChannel && supabase) {
+        supabase.removeChannel(serviceChannel);
+      }
+      if (settingsChannel && supabase) {
+        supabase.removeChannel(settingsChannel);
       }
     };
   }, []);
@@ -73,6 +118,7 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
         whatsappNumber={settings.whatsapp_number}
+        operationalStatus={operationalStatus}
       />
 
       <main className="flex-1">
@@ -99,6 +145,7 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
           onClearPreset={() => setSelectedServicePreset(null)}
           whatsappNumber={settings.whatsapp_number}
           clinicAddress={settings.clinic_address}
+          operationalStatus={operationalStatus}
         />
 
         <TestimonialsSection />

@@ -1,5 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
-import { Service, Booking, BlockedSlot, AppSettings, Testimonial } from '../types';
+import {
+  Service,
+  Booking,
+  BlockedSlot,
+  AppSettings,
+  Testimonial,
+  OperationalStatus,
+  ClinicOperationalStatus,
+} from '../types';
 import { INITIAL_SERVICES, DEFAULT_SETTINGS } from '../data/initialServices';
 import { INITIAL_TESTIMONIALS } from '../data/initialTestimonials';
 
@@ -28,6 +36,7 @@ const STORAGE_KEYS = {
   SETTINGS: 'imb_settings',
   CUSTOMER_DATA: 'indah_spa_customer_profile',
   TESTIMONIALS: 'indah_spa_testimonials',
+  OPERATIONAL_STATUS: 'indah_spa_operational_status',
 };
 
 // Inisialisasi local database jika belum ada
@@ -703,6 +712,146 @@ export async function adminDeleteCustomerBookings(
   localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(remaining));
 
   return { success: true, count: deletedCount || localDeleted };
+}
+
+/**
+ * Simpan catatan tindakan Bidan dan berat badan bayi ke database (Supabase RPC + LocalStorage Fallback)
+ */
+export async function adminSaveTreatmentNote(
+  pin: string,
+  bookingId: string,
+  treatmentNotes: string,
+  babyWeightKg?: string,
+  markCompleted: boolean = false
+): Promise<boolean> {
+  const effectivePin = (pin && pin.trim()) || getAdminSessionPin();
+  const cleanWeight = babyWeightKg && babyWeightKg.trim() ? babyWeightKg.trim() : null;
+  const cleanNotes = treatmentNotes.trim();
+
+  let rpcSuccess = false;
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('admin_save_treatment_note', {
+        pin_input: effectivePin,
+        p_booking_id: bookingId,
+        p_treatment_notes: cleanNotes,
+        p_baby_weight_kg: cleanWeight,
+        p_mark_completed: markCompleted,
+      });
+
+      if (!error && (data === true || data === null || data !== undefined)) {
+        rpcSuccess = true;
+      } else if (error) {
+        console.warn('RPC admin_save_treatment_note error, fallback local:', error);
+      }
+    } catch (e) {
+      console.warn('RPC admin_save_treatment_note exception, fallback local:', e);
+    }
+  }
+
+  // Sinkronkan ke local storage
+  const bookings = getLocalBookings();
+  const idx = bookings.findIndex(b => b.id === bookingId);
+  if (idx !== -1) {
+    bookings[idx].treatment_notes = cleanNotes;
+    if (cleanWeight) {
+      bookings[idx].baby_weight_kg = cleanWeight;
+    }
+    if (markCompleted) {
+      bookings[idx].status = 'completed';
+    }
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('indah_spa_bookings_updated'));
+    }
+    return true;
+  }
+
+  return rpcSuccess;
+}
+
+/**
+ * Membaca status operasional klinik real-time (Supabase clinic_settings + LocalStorage fallback)
+ */
+export async function fetchClinicOperationalStatus(): Promise<ClinicOperationalStatus> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('clinic_settings')
+        .select('operational_status, operational_note, updated_at')
+        .not('operational_status', 'is', null)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        const row = data[0];
+        const result: ClinicOperationalStatus = {
+          status: (row.operational_status as OperationalStatus) || 'open',
+          note: row.operational_note || '',
+          updated_at: row.updated_at,
+        };
+        localStorage.setItem(STORAGE_KEYS.OPERATIONAL_STATUS, JSON.stringify(result));
+        return result;
+      }
+    } catch (e) {
+      console.warn('Gagal membaca operational status dari Supabase (fallback local):', e);
+    }
+  }
+
+  // Fallback ke local storage
+  const raw = localStorage.getItem(STORAGE_KEYS.OPERATIONAL_STATUS);
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {}
+  }
+  return { status: 'open', note: '' };
+}
+
+/**
+ * Memperbarui status operasional klinik secara real-time oleh Bidan (Supabase RPC + LocalStorage fallback)
+ */
+export async function updateClinicOperationalStatus(
+  pin: string,
+  status: OperationalStatus,
+  note?: string
+): Promise<boolean> {
+  const effectivePin = (pin && pin.trim()) || getAdminSessionPin();
+  const cleanNote = note && note.trim() ? note.trim() : null;
+
+  if (supabase) {
+    try {
+      const { error } = await supabase.rpc('admin_update_operational_status', {
+        pin_input: effectivePin,
+        p_status: status,
+        p_note: cleanNote,
+      });
+
+      if (error) {
+        console.warn('RPC admin_update_operational_status error, fallback direct upsert/local:', error);
+      }
+    } catch (e) {
+      console.warn('RPC admin_update_operational_status exception, fallback local:', e);
+    }
+  }
+
+  // Simpan ke local storage
+  const statusObj: ClinicOperationalStatus = {
+    status,
+    note: cleanNote || '',
+    updated_at: new Date().toISOString(),
+  };
+  localStorage.setItem(STORAGE_KEYS.OPERATIONAL_STATUS, JSON.stringify(statusObj));
+
+  // Pancarkan event agar seluruh tab dan komponen aktif langsung memperbarui UI seketika
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('indah_spa_operational_status_updated', { detail: statusObj })
+    );
+  }
+
+  return true;
 }
 
 export async function saveService(

@@ -52,6 +52,10 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 -- Pastikan kolom booking_time dapat menampung nama sesi & jam final fleksibel (hingga 100 karakter)
 ALTER TABLE public.bookings ALTER COLUMN booking_time TYPE VARCHAR(100);
 
+-- Kolom Rekam Tindakan Bidan & Catatan Berat Badan
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS treatment_notes TEXT;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS baby_weight_kg VARCHAR(20);
+
 CREATE INDEX IF NOT EXISTS idx_bookings_date ON public.bookings(booking_date);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON public.bookings(status);
 CREATE INDEX IF NOT EXISTS idx_bookings_code ON public.bookings(booking_code);
@@ -92,6 +96,16 @@ CREATE TABLE IF NOT EXISTS public.clinic_settings (
     value TEXT NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+-- Kolom Status Operasional Real-Time
+ALTER TABLE public.clinic_settings ADD COLUMN IF NOT EXISTS operational_status VARCHAR(50) DEFAULT 'open';
+ALTER TABLE public.clinic_settings ADD COLUMN IF NOT EXISTS operational_note TEXT;
+
+-- Baris default status operasional di clinic_settings
+INSERT INTO public.clinic_settings (key, value, operational_status, operational_note, updated_at)
+VALUES ('clinic_operational_status', 'open', 'open', NULL, timezone('utc'::text, now()))
+ON CONFLICT (key) DO UPDATE
+SET operational_status = COALESCE(public.clinic_settings.operational_status, 'open');
 
 -- ====================================================================
 -- SEED DATA AWAL: 12 LAYANAN RESMI KATALOG BARU
@@ -699,6 +713,71 @@ BEGIN
 END;
 $$;
 
+-- 12. admin_save_treatment_note: Menyimpan catatan tindakan/perkembangan anak & berat badan
+CREATE OR REPLACE FUNCTION public.admin_save_treatment_note(
+    pin_input text,
+    p_booking_id uuid,
+    p_treatment_notes text,
+    p_baby_weight_kg text DEFAULT NULL,
+    p_mark_completed boolean DEFAULT false
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF NOT public.verify_admin_pin(pin_input) THEN
+        RAISE EXCEPTION 'Akses ditolak: PIN Admin tidak valid!';
+    END IF;
+
+    UPDATE public.bookings
+    SET treatment_notes = p_treatment_notes,
+        baby_weight_kg = COALESCE(NULLIF(p_baby_weight_kg, ''), baby_weight_kg),
+        status = CASE WHEN p_mark_completed THEN 'completed' ELSE status END
+    WHERE id = p_booking_id;
+
+    RETURN FOUND;
+END;
+$$;
+
+-- 13. admin_update_operational_status: Memperbarui status operasional klinik real-time
+CREATE OR REPLACE FUNCTION public.admin_update_operational_status(
+    pin_input text,
+    p_status text,
+    p_note text DEFAULT NULL
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF NOT public.verify_admin_pin(pin_input) THEN
+        RAISE EXCEPTION 'Akses ditolak: PIN Admin tidak valid!';
+    END IF;
+
+    IF p_status NOT IN ('open', 'busy_homecare', 'closed_today') THEN
+        RAISE EXCEPTION 'Status operasional tidak valid: % (Hanya boleh: open, busy_homecare, closed_today)', p_status;
+    END IF;
+
+    -- Upsert baris utama clinic_operational_status
+    INSERT INTO public.clinic_settings (key, value, operational_status, operational_note, updated_at)
+    VALUES ('clinic_operational_status', p_status, p_status, p_note, timezone('utc'::text, now()))
+    ON CONFLICT (key) DO UPDATE
+    SET value = EXCLUDED.value,
+        operational_status = EXCLUDED.operational_status,
+        operational_note = EXCLUDED.operational_note,
+        updated_at = EXCLUDED.updated_at;
+
+    -- Sinkronkan juga pada seluruh baris clinic_settings agar query kolom operational_status selalu konsisten
+    UPDATE public.clinic_settings
+    SET operational_status = p_status,
+        operational_note = p_note,
+        updated_at = timezone('utc'::text, now());
+
+    RETURN true;
+END;
+$$;
+
 -- Berikan hak akses eksekusi RPC ke anon & authenticated
 GRANT EXECUTE ON FUNCTION public.get_booked_slots(date) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.verify_admin_pin(text) TO anon, authenticated;
@@ -711,8 +790,10 @@ GRANT EXECUTE ON FUNCTION public.admin_update_setting(text, text, text) TO anon,
 GRANT EXECUTE ON FUNCTION public.admin_manage_testimonial(text, text, uuid, text, text, boolean) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_delete_booking(text, uuid) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_delete_customer_bookings(text, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_save_treatment_note(text, uuid, text, text, boolean) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_update_operational_status(text, text, text) TO anon, authenticated;
 
--- Berikan hak akses tabel clinic_settings untuk pengelolaan PIN hash admin
+-- Berikan hak akses tabel clinic_settings untuk pengelolaan status & PIN hash admin
 GRANT ALL ON TABLE public.clinic_settings TO anon, authenticated;
 
 -- Berikan hak akses SELECT pada testimonials untuk publik dan dashboard admin

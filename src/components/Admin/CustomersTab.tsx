@@ -23,8 +23,16 @@ import {
   Heart,
   Award,
   Trash2,
+  Scale,
+  ClipboardList,
 } from 'lucide-react';
 import { PinConfirmModal } from './PinConfirmModal';
+
+export interface WeightRecord {
+  date: string;
+  weight: string;
+  serviceName: string;
+}
 
 export interface AggregatedCustomer {
   normalizedPhone: string;
@@ -37,8 +45,13 @@ export interface AggregatedCustomer {
   completedOrConfirmedCount: number;
   isLoyal: boolean; // >= 2 kunjungan terkonfirmasi / selesai
   lastVisitDate: string;
+  daysSinceLastVisit: number;
+  isDueForRoutineSpa: boolean; // >= 25 hari
   servicesTaken: string[];
   bookingsHistory: Booking[];
+  latestWeight?: string;
+  latestTreatmentNote?: string;
+  weightHistory: WeightRecord[];
 }
 
 interface CustomersTabProps {
@@ -79,7 +92,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'loyal' | 'new'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'loyal' | 'new' | 'routine_due'>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregatedCustomer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<AggregatedCustomer | null>(null);
 
@@ -127,7 +140,6 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
       });
 
       // Hitung semua status aktif (pending, confirmed, dan completed — kecuali cancelled)
-      // agar pelanggan yang baru saja booking (status pending) langsung muncul sebagai pelanggan terdaftar
       const activeBookings = sorted.filter(b => b.status !== 'cancelled');
 
       // Jika seluruh booking dibatalkan (cancelled), lewati agar tidak mengotori daftar pelanggan aktif
@@ -135,7 +147,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
         return;
       }
 
-      // Ambil data terbaru dari reservasi aktif (termasuk status pending yang baru saja dikirim Bunda)
+      // Ambil data terbaru dari reservasi aktif
       const latestActive = activeBookings[0];
 
       // Cari nama anak dan usia anak terbaru yang tidak kosong
@@ -154,6 +166,30 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
       // Status loyalitas: Pelanggan Tetap jika kunjungan selesai/terkonfirmasi >= 2
       const isLoyal = completedOrConfirmed >= 2;
 
+      // Hitung selisih hari sejak kunjungan terakhir
+      const lastVisitTime = new Date(latestActive.booking_date).getTime();
+      const currentTime = new Date().getTime();
+      const diffTime = Math.max(0, currentTime - lastVisitTime);
+      const daysSinceLastVisit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const isDueForRoutineSpa = daysSinceLastVisit >= 25;
+
+      // Kumpulkan riwayat berat badan bayi
+      const weightHistory: WeightRecord[] = [];
+      for (const b of sorted) {
+        if (b.baby_weight_kg && b.baby_weight_kg.trim()) {
+          weightHistory.push({
+            date: b.booking_date,
+            weight: b.baby_weight_kg.trim(),
+            serviceName: b.service_name,
+          });
+        }
+      }
+
+      const latestWeight = weightHistory.length > 0 ? weightHistory[0].weight : undefined;
+      const latestTreatmentNote = sorted.find(
+        b => b.treatment_notes && b.treatment_notes.trim()
+      )?.treatment_notes;
+
       // Kumpulan nama layanan unik yang pernah diambil
       const uniqueServices = Array.from(
         new Set(activeBookings.map(b => b.service_name).filter(Boolean))
@@ -170,13 +206,20 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
         completedOrConfirmedCount: completedOrConfirmed,
         isLoyal,
         lastVisitDate: latestActive.booking_date,
+        daysSinceLastVisit,
+        isDueForRoutineSpa,
         servicesTaken: uniqueServices,
         bookingsHistory: sorted,
+        latestWeight,
+        latestTreatmentNote,
+        weightHistory,
       });
     });
 
-    // Urutkan pelanggan berdasarkan loyalitas & kunjungan terbaru
+    // Urutkan pelanggan: yang perlu kontrol rutin / loyalitas & kunjungan terbaru
     return result.sort((a, b) => {
+      if (a.isDueForRoutineSpa && !b.isDueForRoutineSpa) return -1;
+      if (!a.isDueForRoutineSpa && b.isDueForRoutineSpa) return 1;
       if (a.isLoyal && !b.isLoyal) return -1;
       if (!a.isLoyal && b.isLoyal) return 1;
       return new Date(b.lastVisitDate).getTime() - new Date(a.lastVisitDate).getTime();
@@ -189,6 +232,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
       // Filter status
       if (statusFilter === 'loyal' && !cust.isLoyal) return false;
       if (statusFilter === 'new' && cust.isLoyal) return false;
+      if (statusFilter === 'routine_due' && !cust.isDueForRoutineSpa) return false;
 
       // Filter query pencarian
       if (!searchQuery.trim()) return true;
@@ -207,6 +251,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
   const totalCustomers = customersList.length;
   const loyalCustomersCount = customersList.filter(c => c.isLoyal).length;
   const newCustomersCount = totalCustomers - loyalCustomersCount;
+  const routineDueCount = customersList.filter(c => c.isDueForRoutineSpa).length;
   const totalBookingsCount = bookings.length;
 
   const handleOpenWhatsApp = (customer: AggregatedCustomer) => {
@@ -217,6 +262,25 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
 Salam hangat dari *Indah Mom & Baby Spa Comal*. Kami ingin menanyakan kabar Bunda & Si Kecil setelah perawatan sebelumnya. Apakah ada keluhan atau kebutuhan perawatan lanjutan yang bisa kami bantu?
 
 Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`;
+
+    window.open(`https://wa.me/${cleanWa}?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const handleSendRoutineSpaWA = (customer: AggregatedCustomer) => {
+    const cleanWa = normalizeWhatsApp(customer.whatsappNumber);
+    const childMention = customer.childName ? `Si Kecil *${customer.childName}*` : 'Si Kecil';
+    const lastServiceName = customer.bookingsHistory[0]?.service_name || 'perawatan';
+
+    const text =
+`Halo Bunda *${customer.momName}* tersayang 🌸
+Salam hangat dan rindu dari Bidan Indah (*Indah Mom & Baby Spa Comal*)!
+
+Tidak terasa sudah *${customer.daysSinceLastVisit} hari* sejak kunjungan terakhir ${childMention} (perawatan _${lastServiceName}_).
+
+Untuk mendukung stimulasi tumbuh kembang optimal serta menjaga tubuh Si Kecil tetap bugar, rileks, dan tidur nyenyak, sudah waktunya ${childMention} spa dan pijat relaksasi rutin bulanan lho Bunda 🥰
+
+Apakah Bunda ingin kami siapkan jadwal terbaik minggu ini?
+Bunda bisa reservasi online langsung di: https://indahmombabyspa.com/#reservasi atau balas pesan WhatsApp ini ya Bunda. Terima kasih banyak Bunda! ❤️`;
 
     window.open(`https://wa.me/${cleanWa}?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -237,10 +301,10 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
   return (
     <div className="space-y-6">
       {/* Top Banner & Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="bg-white p-4 rounded-2xl border border-primary/10 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-charcoal-light">Total Bunda Terdata</span>
+            <span className="text-xs text-charcoal-light">Total Bunda</span>
             <Users className="w-4 h-4 text-primary" />
           </div>
           <div className="font-serif font-bold text-2xl text-primary mt-1">
@@ -271,15 +335,26 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
           <span className="text-[11px] text-emerald-700 block mt-0.5">Kunjungan Pertama</span>
         </div>
 
-        <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200 shadow-sm">
+        <div className="bg-gradient-to-br from-amber-100/90 to-amber-50 p-4 rounded-2xl border-2 border-amber-300 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-primary font-semibold">Total Kunjungan</span>
+            <span className="text-xs text-amber-950 font-bold">Waktunya Spa</span>
+            <Sparkles className="w-4 h-4 text-amber-700 animate-pulse" />
+          </div>
+          <div className="font-serif font-bold text-2xl text-amber-900 mt-1">
+            {routineDueCount}
+          </div>
+          <span className="text-[11px] text-amber-800 font-medium block mt-0.5">Jeda ≥ 25 Hari</span>
+        </div>
+
+        <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200 shadow-sm col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-primary font-semibold">Total Reservasi</span>
             <Calendar className="w-4 h-4 text-primary" />
           </div>
           <div className="font-serif font-bold text-2xl text-primary mt-1">
             {totalBookingsCount}
           </div>
-          <span className="text-[11px] text-purple-700 block mt-0.5">Seluruh Reservasi</span>
+          <span className="text-[11px] text-purple-700 block mt-0.5">Seluruh Kunjungan</span>
         </div>
       </div>
 
@@ -319,6 +394,19 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
             >
               Semua ({totalCustomers})
             </button>
+
+            <button
+              onClick={() => setStatusFilter('routine_due')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                statusFilter === 'routine_due'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-amber-100/80 text-amber-950 border border-amber-300 hover:bg-amber-200/80'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Waktunya Spa (H ≥ 25) ({routineDueCount})</span>
+            </button>
+
             <button
               onClick={() => setStatusFilter('loyal')}
               className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
@@ -330,6 +418,7 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
               <Award className="w-3.5 h-3.5" />
               <span>Pelanggan Tetap (≥ 2x) ({loyalCustomersCount})</span>
             </button>
+
             <button
               onClick={() => setStatusFilter('new')}
               className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
@@ -400,32 +489,49 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
                       </div>
                     </div>
 
-                    {/* Badge Status Loyalitas */}
-                    {customer.isLoyal ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs shrink-0">
-                        <Sparkles className="w-3 h-3" />
-                        <span>Pelanggan Tetap</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
-                        <Heart className="w-3 h-3" />
-                        <span>Pelanggan Baru</span>
-                      </span>
-                    )}
+                    {/* Badge Status Loyalitas & Spa Rutin */}
+                    <div className="flex flex-col items-end gap-1">
+                      {customer.isDueForRoutineSpa && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-950 border border-amber-300 shadow-xs shrink-0 animate-pulse">
+                          <Sparkles className="w-3 h-3 text-amber-600" />
+                          <span>Waktunya Spa (H+{customer.daysSinceLastVisit})</span>
+                        </span>
+                      )}
+                      {customer.isLoyal ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs shrink-0">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Pelanggan Tetap</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
+                          <Heart className="w-3 h-3" />
+                          <span>Pelanggan Baru</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Info Si Kecil */}
                   {customer.childName && (
-                    <div className="mt-2.5 p-2 rounded-xl bg-cream/70 border border-primary/5 flex items-center gap-2 text-xs">
-                      <div className="w-6 h-6 rounded-lg bg-accent/20 text-accent-dark flex items-center justify-center shrink-0">
-                        <Baby className="w-3.5 h-3.5" />
+                    <div className="mt-2.5 p-2 rounded-xl bg-cream/70 border border-primary/5 flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-accent/20 text-accent-dark flex items-center justify-center shrink-0">
+                          <Baby className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="truncate">
+                          <span className="font-semibold text-primary">{customer.childName}</span>
+                          {customer.childAge && (
+                            <span className="text-charcoal-light ml-1">({customer.childAge})</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="truncate">
-                        <span className="font-semibold text-primary">{customer.childName}</span>
-                        {customer.childAge && (
-                          <span className="text-charcoal-light ml-1">({customer.childAge})</span>
-                        )}
-                      </div>
+
+                      {customer.latestWeight && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-100 text-primary font-bold text-[10px] shrink-0">
+                          <Scale className="w-3 h-3 text-accent" />
+                          <span>{customer.latestWeight}</span>
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -483,10 +589,36 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
                         )}
                       </div>
                     </div>
+
+                    {/* Catatan Tindakan Terakhir Bidan jika ada */}
+                    {customer.latestTreatmentNote && (
+                      <div className="mt-2.5 p-2.5 rounded-xl bg-purple-50/70 border border-purple-200/70 text-[11px] text-charcoal">
+                        <div className="font-bold text-primary flex items-center gap-1 mb-0.5 text-[10px]">
+                          <ClipboardList className="w-3 h-3 text-accent" />
+                          <span>Catatan Perawatan Terakhir:</span>
+                        </div>
+                        <p className="line-clamp-2 italic text-charcoal-light">
+                          "{customer.latestTreatmentNote}"
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions Footer */}
                   <div className="pt-3 border-t border-slate-100 space-y-2">
+                    {/* Tombol Prioritas: Pengingat Spa Rutin jika H >= 25 */}
+                    {customer.isDueForRoutineSpa && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendRoutineSpaWA(customer)}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-xs transition-all"
+                        title="Kirim pesan WhatsApp pengingat spa rutin bulanan Si Kecil"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Kirim Pengingat Spa Rutin (WA)</span>
+                      </button>
+                    )}
+
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -575,6 +707,54 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
 
             {/* Modal Content: Timeline Kunjungan */}
             <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+              {/* Alert Pengingat Spa Rutin jika H >= 25 */}
+              {selectedCustomer.isDueForRoutineSpa && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 text-xs text-amber-950">
+                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0 animate-pulse" />
+                    <span>
+                      Sudah <strong>{selectedCustomer.daysSinceLastVisit} hari</strong> sejak kunjungan terakhir. Waktunya stimulasi &amp; spa rutin bulanan Si Kecil!
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSendRoutineSpaWA(selectedCustomer)}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold whitespace-nowrap shadow-xs transition-colors self-start sm:self-auto"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Kirim Pengingat Spa (WA)</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Riwayat Perkembangan Berat Badan Si Kecil */}
+              {selectedCustomer.weightHistory.length > 0 && (
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 via-cream/80 to-accent/10 border border-purple-200/70 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                      <Scale className="w-3.5 h-3.5 text-accent" />
+                      Riwayat Perkembangan Berat Badan Si Kecil:
+                    </span>
+                    <span className="text-[11px] text-accent-dark font-bold">
+                      Terakhir: {selectedCustomer.latestWeight}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {[...selectedCustomer.weightHistory].reverse().map((rec, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-xs shadow-xs"
+                      >
+                        <span className="text-slate-400 text-[10px]">
+                          {formatTanggalIndo(rec.date)}:
+                        </span>
+                        <strong className="text-primary font-bold">{rec.weight}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <span className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
                   <History className="w-4 h-4 text-accent" />
@@ -680,6 +860,29 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
                             <span>"{booking.notes}"</span>
                           </div>
                         )}
+
+                        {/* Rekam Tindakan Bidan & Berat Badan Si Kecil */}
+                        {(booking.treatment_notes || booking.baby_weight_kg) && (
+                          <div className="sm:col-span-2 p-2.5 rounded-xl bg-purple-50/70 border border-purple-200/80 space-y-1 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-primary flex items-center gap-1.5 text-[11px]">
+                                <ClipboardList className="w-3.5 h-3.5 text-accent" />
+                                Rekam Tindakan Bidan
+                              </span>
+                              {booking.baby_weight_kg && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-primary font-bold text-[10px]">
+                                  <Scale className="w-3 h-3 text-accent" />
+                                  <span>BB: {booking.baby_weight_kg}</span>
+                                </span>
+                              )}
+                            </div>
+                            {booking.treatment_notes && (
+                              <p className="text-charcoal leading-relaxed text-[11px] italic">
+                                "{booking.treatment_notes}"
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -709,14 +912,28 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleOpenWhatsApp(selectedCustomer)}
-                className="flex items-center gap-2 py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Follow-up WhatsApp Bunda</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedCustomer.isDueForRoutineSpa && (
+                  <button
+                    type="button"
+                    onClick={() => handleSendRoutineSpaWA(selectedCustomer)}
+                    className="flex items-center gap-1.5 py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all"
+                    title="Kirim pesan WhatsApp pengingat spa rutin bulanan"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Kirim Pengingat Spa (WA)</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenWhatsApp(selectedCustomer)}
+                  className="flex items-center gap-2 py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Follow-up WhatsApp Bunda</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

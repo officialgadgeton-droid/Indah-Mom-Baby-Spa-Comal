@@ -38,6 +38,16 @@ export interface Booking {
   notes?: string;
   status: BookingStatus;
   created_at?: string;
+  treatment_notes?: string;
+  baby_weight_kg?: string;
+}
+
+export type OperationalStatus = 'open' | 'busy_homecare' | 'closed_today';
+
+export interface ClinicOperationalStatus {
+  status: OperationalStatus;
+  note?: string;
+  updated_at?: string;
 }
 
 export interface BlockedSlot {
