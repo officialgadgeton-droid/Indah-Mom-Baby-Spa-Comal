@@ -29,7 +29,18 @@ import {
   Zap,
   AlertCircle,
   AlertTriangle,
+  Layers,
+  Plus,
 } from 'lucide-react';
+
+export interface QueuedPhoto {
+  id: string;
+  file: File;
+  compressionResult: CompressionResult;
+  caption: string;
+  status: 'ready' | 'uploading' | 'success' | 'error';
+  errorMessage?: string;
+}
 
 interface TestimonialsTabProps {
   adminPin: string;
@@ -43,13 +54,14 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'hidden'>('all');
 
-  // Form State
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [caption, setCaption] = useState<string>('');
+  // Form State (Mendukung upload banyak foto sekaligus)
+  const [uploadQueue, setUploadQueue] = useState<QueuedPhoto[]>([]);
+  const [defaultCaption, setDefaultCaption] = useState<string>('');
   const [isActiveOnUpload, setIsActiveOnUpload] = useState<boolean>(true);
-  const [compressionResult, setCompressionResult] = useState<CompressionResult | null>(null);
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
+  const [compressProgress, setCompressProgress] = useState<{ current: number; total: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; percent: number } | null>(null);
 
   // Status & Notification Banners
   const [uploadStepMessage, setUploadStepMessage] = useState<string | null>(null);
@@ -61,6 +73,12 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
   const [previewImage, setPreviewImage] = useState<{ url: string; caption?: string } | null>(null);
   // Broken image tracker to prevent rendering broken image icons
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+
+  const totalOriginalSize = uploadQueue.reduce((acc, it) => acc + it.compressionResult.originalSize, 0);
+  const totalCompressedSize = uploadQueue.reduce((acc, it) => acc + it.compressionResult.compressedSize, 0);
+  const totalSavingsRatio = totalOriginalSize > 0
+    ? Math.max(0, Math.round(((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100))
+    : 0;
 
   const loadTestimonials = async () => {
     setIsLoading(true);
@@ -82,50 +100,97 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
     loadTestimonials();
   }, [adminPin]);
 
-  // Handle image selection & automatic browser-side compression
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Handle pemilihan foto sekaligus (multiple) & kompresi canvas HTML5 otomatis
+  const handleFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFiles = e.target.files ? Array.from(e.target.files) : [];
+    if (rawFiles.length === 0) return;
 
-    if (!file.type.startsWith('image/')) {
-      warning('Harap pilih berkas foto/gambar yang valid.');
+    const validImageFiles = rawFiles.filter((f) => f.type.startsWith('image/'));
+    if (validImageFiles.length === 0) {
+      warning('Harap pilih berkas foto/gambar yang valid (JPG, PNG, WEBP).');
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
+    }
+
+    if (validImageFiles.length < rawFiles.length) {
+      warning(`${rawFiles.length - validImageFiles.length} berkas dilewati karena bukan gambar.`);
     }
 
     setUploadError(null);
     setUploadSuccessBanner(null);
-    setSelectedFile(file);
     setIsCompressing(true);
-    try {
-      // Auto kompresi canvas HTML5: max width 720px, kualitas JPEG 0.8
-      const result = await compressImage(file, 720, 0.8);
-      setCompressionResult(result);
-    } catch (err) {
-      console.error('Gagal mengompres gambar:', err);
-      error('Terjadi kesalahan saat memproses gambar.');
-      setSelectedFile(null);
-      setCompressionResult(null);
-    } finally {
-      setIsCompressing(false);
+    setCompressProgress({ current: 0, total: validImageFiles.length });
+
+    const newQueued: QueuedPhoto[] = [];
+    for (let i = 0; i < validImageFiles.length; i++) {
+      const file = validImageFiles[i];
+      setCompressProgress({ current: i + 1, total: validImageFiles.length });
+      try {
+        // Auto kompresi canvas HTML5: max width 720px, kualitas JPEG 0.8
+        const result = await compressImage(file, 720, 0.8);
+        newQueued.push({
+          id: `queue-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 7)}`,
+          file,
+          compressionResult: result,
+          caption: defaultCaption.trim() || '',
+          status: 'ready',
+        });
+      } catch (err) {
+        console.error(`Gagal mengompres ${file.name}:`, err);
+      }
+    }
+
+    setUploadQueue((prev) => [...prev, ...newQueued]);
+    setIsCompressing(false);
+    setCompressProgress(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    if (newQueued.length > 0) {
+      success(`${newQueued.length} foto berhasil dikompres otomatis & siap diunggah!`);
     }
   };
 
+  const handleRemoveQueueItem = (id: string) => {
+    setUploadQueue((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleUpdateQueueCaption = (id: string, newCaption: string) => {
+    setUploadQueue((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, caption: newCaption } : item))
+    );
+  };
+
+  const handleApplyDefaultCaptionToAll = () => {
+    if (!defaultCaption.trim()) {
+      warning('Silakan ketik keterangan terlebih dahulu.');
+      return;
+    }
+    setUploadQueue((prev) =>
+      prev.map((item) => ({ ...item, caption: defaultCaption.trim() }))
+    );
+    success('Keterangan berhasil diterapkan ke seluruh foto antrean!');
+  };
+
   const handleResetForm = () => {
-    setSelectedFile(null);
-    setCompressionResult(null);
-    setCaption('');
+    setUploadQueue([]);
+    setDefaultCaption('');
     setIsActiveOnUpload(true);
     setUploadStepMessage(null);
+    setUploadProgress(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const handleSubmitUpload = async (e: React.FormEvent) => {
+  const handleSubmitBatchUpload = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!compressionResult) {
-      warning('Silakan pilih foto screenshot testimoni terlebih dahulu.');
+    const itemsToUpload = uploadQueue.filter((item) => item.status !== 'success');
+    if (itemsToUpload.length === 0) {
+      warning('Silakan pilih minimal 1 foto screenshot terlebih dahulu.');
       return;
     }
 
@@ -141,64 +206,88 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
     setUploadError(null);
     setUploadSuccessBanner(null);
 
-    try {
-      let finalImageUrl = compressionResult.dataUrl;
-      let storageMode: 'supabase' | 'local' = 'local';
+    let successCount = 0;
+    let failedCount = 0;
+    const total = itemsToUpload.length;
 
-      // 1. Jika Supabase aktif, upload blob ke Supabase Storage bucket 'testimonials'
-      if (isSupabaseConfigured) {
-        setUploadStepMessage('Langkah 1/3: Mengunggah berkas foto ke Supabase Storage...');
-        const fileExt = 'jpg';
-        const cleanName = caption
-          ? caption.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)
-          : 'testi';
-        const fileName = `wa-${cleanName}-${Date.now()}.${fileExt}`;
+    for (let i = 0; i < total; i++) {
+      const item = itemsToUpload[i];
+      const percent = Math.round(((i + 1) / total) * 100);
+      setUploadProgress({ current: i + 1, total, percent });
+      setUploadStepMessage(
+        `Mengunggah foto ${i + 1} dari ${total} (${percent}%)...`
+      );
 
-        const uploadRes = await uploadTestimonialImage(compressionResult.blob, fileName);
-        if (uploadRes.error || !uploadRes.url) {
-          const detail = uploadRes.error || 'URL publik gambar tidak tersedia dari Supabase Storage.';
-          setUploadError(`Upload foto ke Storage gagal: ${detail}`);
-          error(`Upload Storage Gagal: ${detail}`);
-          setIsSubmitting(false);
-          setUploadStepMessage(null);
-          return;
+      // Tandai item sedang diunggah
+      setUploadQueue((prev) =>
+        prev.map((it) => (it.id === item.id ? { ...it, status: 'uploading' } : it))
+      );
+
+      try {
+        let finalImageUrl = item.compressionResult.dataUrl;
+
+        // 1. Jika Supabase aktif, upload blob ke Supabase Storage bucket 'testimonials'
+        if (isSupabaseConfigured) {
+          const fileExt = 'jpg';
+          const cleanName = item.caption
+            ? item.caption.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)
+            : 'testi';
+          const fileName = `wa-${cleanName}-${Date.now()}-${i}.${fileExt}`;
+
+          const uploadRes = await uploadTestimonialImage(item.compressionResult.blob, fileName);
+          if (uploadRes.error || !uploadRes.url) {
+            throw new Error(uploadRes.error || 'Gagal mengunggah foto ke storage Supabase.');
+          }
+          finalImageUrl = uploadRes.url;
         }
-        finalImageUrl = uploadRes.url;
-        storageMode = 'supabase';
+
+        // 2. Simpan record data via RPC admin_manage_testimonial
+        const result = await saveTestimonial(pinToUse, {
+          image_url: finalImageUrl,
+          caption: item.caption.trim() || undefined,
+          is_active: isActiveOnUpload,
+        });
+
+        if (!result) {
+          throw new Error('Gagal menyimpan testimoni: Server tidak mengembalikan konfirmasi data.');
+        }
+
+        successCount++;
+        setUploadQueue((prev) =>
+          prev.map((it) => (it.id === item.id ? { ...it, status: 'success' } : it))
+        );
+      } catch (err: any) {
+        console.error(`Kendala saat upload foto ${item.file.name}:`, err);
+        failedCount++;
+        const msg = err?.message || 'Gagal menyimpan testimoni.';
+        setUploadQueue((prev) =>
+          prev.map((it) =>
+            it.id === item.id ? { ...it, status: 'error', errorMessage: msg } : it
+          )
+        );
       }
+    }
 
-      // 2. Simpan record data via RPC admin_manage_testimonial
-      setUploadStepMessage('Langkah 2/3: Menyimpan data testimoni via RPC database...');
-      const result = await saveTestimonial(pinToUse, {
-        image_url: finalImageUrl,
-        caption: caption.trim() || undefined,
-        is_active: isActiveOnUpload,
-      });
+    // Refresh daftar testimoni
+    await loadTestimonials();
+    setIsSubmitting(false);
+    setUploadStepMessage(null);
+    setUploadProgress(null);
 
-      if (!result) {
-        throw new Error('Gagal menyimpan testimoni: Server tidak mengembalikan konfirmasi data.');
-      }
-
-      // 3. Langsung panggil ulang fetch daftar testimoni dan tampilkan banner sukses hijau
-      setUploadStepMessage('Langkah 3/3: Memperbarui daftar galeri testimoni...');
-      await loadTestimonials();
-
-      const successMsg =
-        storageMode === 'supabase'
-          ? 'Foto testimoni WhatsApp berhasil diunggah ke Supabase Cloud dan langsung tersimpan di database!'
-          : 'Foto testimoni WhatsApp berhasil disimpan di penyimpanan lokal (Mode Preview)!';
-
+    if (failedCount === 0) {
+      const successMsg = isSupabaseConfigured
+        ? `Alhamdulillah! Seluruh ${successCount} foto testimoni WhatsApp berhasil diunggah ke Supabase Cloud & database!`
+        : `Seluruh ${successCount} foto testimoni WhatsApp berhasil disimpan di penyimpanan lokal (Mode Preview)!`;
       setUploadSuccessBanner(successMsg);
       success(successMsg);
-      handleResetForm();
-    } catch (err: any) {
-      console.error('Kendala saat upload testimoni:', err);
-      const errMsg = err?.message || 'Terjadi kendala tak terduga saat menyimpan testimoni.';
-      setUploadError(errMsg);
-      error(errMsg);
-    } finally {
-      setIsSubmitting(false);
-      setUploadStepMessage(null);
+      setUploadQueue([]);
+      setDefaultCaption('');
+    } else {
+      const partialMsg = `${successCount} foto berhasil diunggah, ${failedCount} foto mengalami kendala. Periksa daftar antrean di bawah.`;
+      setUploadError(partialMsg);
+      warning(partialMsg);
+      // Sisakan yang gagal dalam antrean agar Bidan bisa mencoba lagi
+      setUploadQueue((prev) => prev.filter((it) => it.status !== 'success'));
     }
   };
 
@@ -375,25 +464,32 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
           </div>
         )}
 
-        <form onSubmit={handleSubmitUpload} className="space-y-5">
+        <form onSubmit={handleSubmitBatchUpload} className="space-y-5">
           {/* File Picker Area */}
           <div>
-            <label className="block text-xs font-bold text-charcoal uppercase tracking-wider mb-2">
-              Pilih Foto Screenshot WhatsApp <span className="text-rose-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold text-charcoal uppercase tracking-wider">
+                Pilih Foto Screenshot WhatsApp <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[11px] font-semibold text-accent-dark bg-accent/15 px-2.5 py-0.5 rounded-full">
+                Mendukung Banyak Foto Sekaligus
+              </span>
+            </div>
 
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               accept="image/*"
-              onChange={handleFileChange}
+              onChange={handleFilesChange}
               className="hidden"
-              id="testimonial-file-input"
+              id="testimonial-files-input"
             />
 
-            {!compressionResult && (
+            {/* Dropzone utama (ketika antrean masih kosong) */}
+            {uploadQueue.length === 0 && (
               <label
-                htmlFor="testimonial-file-input"
+                htmlFor="testimonial-files-input"
                 className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${
                   isCompressing
                     ? 'border-accent bg-accent/5'
@@ -404,10 +500,10 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
                   <div className="flex flex-col items-center gap-2 text-center">
                     <RefreshCw className="w-8 h-8 text-accent animate-spin" />
                     <p className="text-sm font-bold text-primary">
-                      Sedang Mengompres Gambar Otomatis...
+                      Sedang Mengompres Gambar Otomatis ({compressProgress?.current || 0}/{compressProgress?.total || 0})...
                     </p>
                     <p className="text-xs text-charcoal-light">
-                      Memperkecil dimensi hingga 720px & kompresi JPEG 0.8 di browser.
+                      Memperkecil dimensi hingga 720px & kompresi JPEG 0.8 langsung di browser.
                     </p>
                   </div>
                 ) : (
@@ -417,185 +513,285 @@ export const TestimonialsTab: React.FC<TestimonialsTabProps> = ({ adminPin }) =>
                     </div>
                     <div>
                       <p className="text-sm font-bold text-primary">
-                        Klik di sini untuk Memilih / Mengambil Foto
+                        Klik di sini untuk Memilih / Mengambil Foto (Bisa Banyak Sekaligus)
                       </p>
                       <p className="text-xs text-charcoal-light mt-1">
-                        Format JPG, PNG, atau WEBP. Langsung dari Galeri atau Kamera HP.
+                        Format JPG, PNG, atau WEBP. Pilih puluhan foto langsung dari Galeri HP atau Folder Komputer.
                       </p>
                     </div>
-                    <span className="text-[11px] font-semibold text-accent-dark bg-accent/15 px-3 py-1 rounded-full">
-                      Auto-Kompres Otomatis & Super Ringan
+                    <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-100/70 px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1.5">
+                      <Zap className="w-3 h-3 text-emerald-600" />
+                      Auto-Kompres Otomatis • Hemat Storage & Ringan
                     </span>
                   </div>
                 )}
               </label>
             )}
 
-            {/* Preview of Compressed Image & Comparison Stats */}
-            {compressionResult && (
-              <div className="border border-emerald-200 bg-emerald-50/40 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-5 items-center">
-                {/* Thumbnail Preview */}
-                <div className="relative group shrink-0">
-                  <img
-                    src={compressionResult.dataUrl}
-                    alt="Preview"
-                    className="w-28 h-44 sm:w-32 sm:h-48 object-cover rounded-xl border border-slate-200 shadow-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPreviewImage({
-                        url: compressionResult.dataUrl,
-                        caption: caption || 'Preview Foto Terkompresi',
-                      })
-                    }
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 rounded-xl flex items-center justify-center text-white transition-opacity"
-                    title="Klik untuk perbesar"
-                  >
-                    <Maximize2 className="w-5 h-5" />
-                  </button>
-                </div>
+            {/* Jika ada foto dalam antrean */}
+            {uploadQueue.length > 0 && (
+              <div className="space-y-4">
+                {/* Ringkasan Kompresi Antrean */}
+                <div className="border border-emerald-200 bg-emerald-50/40 rounded-2xl p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-emerald-200/60">
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-bold text-emerald-900">
+                          {uploadQueue.length} Foto Siap Diunggah & Tersinkron!
+                        </h4>
+                        <p className="text-[11px] text-emerald-800">
+                          Seluruh gambar telah dikompres otomatis di browser dengan rasio hemat terbaik.
+                        </p>
+                      </div>
+                    </div>
 
-                {/* Compression Info */}
-                <div className="flex-1 w-full space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileCheck className="w-5 h-5 text-emerald-600" />
-                    <span className="text-sm font-bold text-emerald-800">
-                      Gambar Berhasil Dikompres Otomatis di Browser!
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <label
+                        htmlFor="testimonial-files-input"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-800 text-xs font-bold hover:bg-emerald-50 cursor-pointer shadow-2xs transition-all"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Tambah Foto Lagi</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleResetForm}
+                        disabled={isSubmitting}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-800 hover:underline px-2 py-1 cursor-pointer"
+                      >
+                        Kosongkan
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Size comparison pill */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                    <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+                  {/* Statistik Ukuran Kompresi */}
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-200">
                       <span className="text-charcoal-light block text-[10px] uppercase font-semibold">
-                        Ukuran Asli
+                        Total Ukuran Asli
                       </span>
                       <strong className="text-slate-700 text-sm">
-                        {formatFileSize(compressionResult.originalSize)}
+                        {formatFileSize(totalOriginalSize)}
                       </strong>
                     </div>
 
-                    <div className="bg-white p-2.5 rounded-lg border border-emerald-200">
+                    <div className="bg-white p-2.5 rounded-xl border border-emerald-200">
                       <span className="text-emerald-700 block text-[10px] uppercase font-semibold">
-                        Ukuran Terkompres
+                        Total Terkompresi
                       </span>
                       <strong className="text-emerald-700 text-sm">
-                        {formatFileSize(compressionResult.compressedSize)}
+                        {formatFileSize(totalCompressedSize)}
                       </strong>
                     </div>
 
-                    <div className="bg-emerald-100/70 p-2.5 rounded-lg border border-emerald-300 col-span-2 sm:col-span-1">
+                    <div className="bg-emerald-100/70 p-2.5 rounded-xl border border-emerald-300">
                       <span className="text-emerald-800 block text-[10px] uppercase font-semibold">
                         Hemat Kuota
                       </span>
                       <strong className="text-emerald-800 text-sm">
-                        -{compressionResult.ratio}% Lebih Ringan
+                        -{totalSavingsRatio}% Lebih Ringan
                       </strong>
                     </div>
                   </div>
+                </div>
 
-                  <p className="text-[11px] text-charcoal-light">
-                    Dimensi disesuaikan: {compressionResult.width} &times; {compressionResult.height}px. Sangat cepat dibuka oleh pengunjung web!
-                  </p>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <label
-                      htmlFor="testimonial-file-input"
-                      className="text-xs font-semibold text-primary hover:underline cursor-pointer"
-                    >
-                      Ganti Foto Lain
+                {/* Pengaturan Massal: Default Caption & Toggle Status */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-bold text-charcoal uppercase tracking-wider mb-1">
+                      Keterangan Seragam / Nama Bunda <span className="text-charcoal-light font-normal text-[10px]">(Opsional)</span>
                     </label>
-                    <span className="text-slate-300">•</span>
-                    <button
-                      type="button"
-                      onClick={handleResetForm}
-                      className="text-xs font-semibold text-rose-600 hover:underline"
-                    >
-                      Batal
-                    </button>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={defaultCaption}
+                        onChange={(e) => setDefaultCaption(e.target.value)}
+                        placeholder="Misal: Bunda Alvaro - Baby Spa Comal"
+                        className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-xs text-charcoal focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyDefaultCaptionToAll}
+                        className="px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold shrink-0 transition-colors cursor-pointer"
+                        title="Terapkan teks ini ke seluruh foto dalam antrean"
+                      >
+                        Terapkan ke Semua
+                      </button>
+                    </div>
                   </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-charcoal uppercase tracking-wider mb-1">
+                      Status Publikasi
+                    </label>
+                    <label className="flex items-center gap-2 p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                      <input
+                        type="checkbox"
+                        checked={isActiveOnUpload}
+                        onChange={(e) => setIsActiveOnUpload(e.target.checked)}
+                        className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-accent"
+                      />
+                      <span className="text-xs font-semibold text-charcoal">
+                        Langsung Tampilkan di Web
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Grid Kartu Foto dalam Antrean */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1 border border-slate-200 rounded-2xl bg-slate-50/50">
+                  {uploadQueue.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="bg-white border border-slate-200 rounded-xl p-3 flex gap-3 relative shadow-2xs group"
+                    >
+                      {/* Thumbnail Preview */}
+                      <div className="relative w-16 h-24 sm:w-20 sm:h-28 shrink-0 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                        <img
+                          src={item.compressionResult.dataUrl}
+                          alt={`Foto ${idx + 1}`}
+                          className="w-full h-full object-cover object-top"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewImage({
+                              url: item.compressionResult.dataUrl,
+                              caption: item.caption || item.file.name,
+                            })
+                          }
+                          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center text-white transition-opacity cursor-pointer"
+                          title="Perbesar"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Detail & Input Keterangan Foto */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between gap-1 mb-1">
+                            <span className="text-[11px] font-bold text-slate-700 truncate" title={item.file.name}>
+                              #{idx + 1} {item.file.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveQueueItem(item.id)}
+                              disabled={isSubmitting}
+                              className="text-slate-400 hover:text-rose-600 p-0.5 rounded transition-colors cursor-pointer"
+                              title="Hapus foto ini dari antrean"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-[10px] text-charcoal-light mb-2">
+                            <span>{formatFileSize(item.compressionResult.originalSize)}</span>
+                            <span>&rarr;</span>
+                            <span className="text-emerald-700 font-bold">
+                              {formatFileSize(item.compressionResult.compressedSize)} (-{item.compressionResult.ratio}%)
+                            </span>
+                          </div>
+
+                          <input
+                            type="text"
+                            value={item.caption}
+                            onChange={(e) => handleUpdateQueueCaption(item.id, e.target.value)}
+                            placeholder="Keterangan foto ini..."
+                            className="w-full px-2 py-1 rounded-md border border-slate-200 text-xs text-charcoal focus:ring-1 focus:ring-accent outline-none"
+                          />
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="pt-2 flex items-center justify-between text-[10px]">
+                          {item.status === 'ready' && (
+                            <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              Siap Unggah
+                            </span>
+                          )}
+                          {item.status === 'uploading' && (
+                            <span className="text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                              <RefreshCw className="w-2.5 h-2.5 animate-spin text-accent" />
+                              Mengunggah...
+                            </span>
+                          )}
+                          {item.status === 'success' && (
+                            <span className="text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              Berhasil
+                            </span>
+                          )}
+                          {item.status === 'error' && (
+                            <span className="text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded-full" title={item.errorMessage}>
+                              Gagal Upload
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Input Caption / Nama Bunda */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-charcoal uppercase tracking-wider mb-1.5">
-                Keterangan Singkat / Nama Bunda <span className="text-charcoal-light font-normal text-[11px]">(Opsional)</span>
-              </label>
-              <input
-                type="text"
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="Misal: Bunda Rina - Baby Spa Comal"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-charcoal focus:ring-2 focus:ring-accent focus:border-accent outline-none"
-              />
-              <p className="text-[11px] text-charcoal-light mt-1">
-                Keterangan ini akan muncul sebagai label manis di bawah mockup HP.
-              </p>
-            </div>
-
-            {/* Toggle Status On Upload */}
-            <div>
-              <label className="block text-xs font-bold text-charcoal uppercase tracking-wider mb-1.5">
-                Status Tampil
-              </label>
-              <label className="flex items-center gap-2.5 p-2.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={isActiveOnUpload}
-                  onChange={(e) => setIsActiveOnUpload(e.target.checked)}
-                  className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-accent"
-                />
-                <span className="text-xs font-semibold text-charcoal">
-                  Langsung Tampilkan di Web
-                </span>
-              </label>
-            </div>
-          </div>
-
           {/* Progress Indicator saat Proses Upload & Simpan */}
-          {isSubmitting && uploadStepMessage && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex items-center gap-2.5 text-xs text-primary animate-pulse">
-              <RefreshCw className="w-4 h-4 animate-spin text-accent shrink-0" />
-              <span className="font-semibold">{uploadStepMessage}</span>
+          {isSubmitting && (
+            <div className="space-y-2 bg-primary/5 border border-primary/20 rounded-2xl p-4">
+              <div className="flex items-center justify-between text-xs font-bold text-primary">
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin text-accent shrink-0" />
+                  <span>{uploadStepMessage || 'Sedang memproses upload foto...'}</span>
+                </span>
+                {uploadProgress && <span>{uploadProgress.percent}%</span>}
+              </div>
+              {uploadProgress && (
+                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-primary via-accent to-emerald-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress.percent}%` }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-            {compressionResult && (
+            {uploadQueue.length > 0 && (
               <button
                 type="button"
                 onClick={handleResetForm}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-charcoal text-xs font-semibold"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-charcoal text-xs font-semibold cursor-pointer"
               >
-                Reset
+                Reset Antrean
               </button>
             )}
 
             <button
               type="submit"
-              disabled={isSubmitting || !compressionResult}
+              disabled={isSubmitting || uploadQueue.length === 0}
               className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-all ${
-                isSubmitting || !compressionResult
+                isSubmitting || uploadQueue.length === 0
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-primary hover:bg-primary-dark text-white hover:shadow-md active:translate-y-0.5'
+                  : 'bg-primary hover:bg-primary-dark text-white hover:shadow-md active:translate-y-0.5 cursor-pointer'
               }`}
             >
               {isSubmitting ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>{uploadStepMessage ? 'Memproses...' : 'Menyimpan Testimoni...'}</span>
+                  <span>Mengunggah {uploadQueue.length} Foto...</span>
                 </>
               ) : (
                 <>
                   <UploadCloud className="w-4 h-4" />
-                  <span>Simpan & Upload Testimoni</span>
+                  <span>
+                    {uploadQueue.length > 0
+                      ? `Upload & Simpan ${uploadQueue.length} Foto Testimoni`
+                      : 'Pilih Foto Terlebih Dahulu'}
+                  </span>
                 </>
               )}
             </button>

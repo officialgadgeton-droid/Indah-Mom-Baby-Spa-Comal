@@ -13,6 +13,8 @@ import {
   Pause,
   Play,
   ShieldCheck,
+  ArrowLeft,
+  Images,
 } from 'lucide-react';
 import { RevealOnScroll } from './RevealOnScroll';
 import { Testimonial } from '../types';
@@ -123,6 +125,7 @@ type DisplayItem =
       imageUrl: string;
       caption: string;
       subtitle: string;
+      createdAt?: string;
     }
   | {
       type: 'sample';
@@ -130,6 +133,7 @@ type DisplayItem =
       sample: SampleChatData;
       caption: string;
       subtitle: string;
+      createdAt?: string;
     };
 
 export const TestimonialsSection: React.FC = () => {
@@ -138,6 +142,8 @@ export const TestimonialsSection: React.FC = () => {
   // Testimonials state (uploaded from Supabase / localStorage)
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [isFullGalleryOpen, setIsFullGalleryOpen] = useState<boolean>(false);
+  const [galleryVisibleCount, setGalleryVisibleCount] = useState<number>(12);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
@@ -167,7 +173,19 @@ export const TestimonialsSection: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  // Format list item unik untuk galeri
+  // Kunci scrolling halaman latar belakang saat modal galeri penuh terbuka
+  useEffect(() => {
+    if (isFullGalleryOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullGalleryOpen]);
+
+  // Format list item unik untuk galeri (semua testimoni aktif dari Supabase/lokal)
   const uniqueItems: DisplayItem[] = useMemo(() => {
     if (testimonials.length > 0) {
       return testimonials.map((t) => ({
@@ -176,6 +194,7 @@ export const TestimonialsSection: React.FC = () => {
         imageUrl: t.image_url,
         caption: t.caption || 'Testimoni WhatsApp',
         subtitle: 'Bunda Bahagia • Pasien Terverifikasi',
+        createdAt: t.created_at,
       }));
     }
     return SAMPLE_CHATS.map((s) => ({
@@ -184,26 +203,50 @@ export const TestimonialsSection: React.FC = () => {
       sample: s,
       caption: s.caption,
       subtitle: s.senderSubtitle,
+      createdAt: undefined,
     }));
   }, [testimonials]);
 
-  // Siapkan deretan kartu untuk animasi horizontal marquee seamless loop
-  // Jika item unik hanya 1 atau 2, duplikasi hingga minimal 6-8 kartu agar putaran animasi berjalan mulus tanpa celah
+  // Batasi Marquee Halaman Depan ke maksimal 10 Testimoni Aktif Terbaru
+  // Animasi tetap mulus & ringan di HP meskipun data sudah ratusan
   const marqueeCards: DisplayItem[] = useMemo(() => {
-    if (uniqueItems.length === 0) return [];
-    let list = [...uniqueItems];
+    const latestTen = uniqueItems.slice(0, 10);
+    if (latestTen.length === 0) return [];
+    let list = [...latestTen];
     while (list.length < 6) {
-      list = [...list, ...uniqueItems];
+      list = [...list, ...latestTen];
     }
     return list;
   }, [uniqueItems]);
 
-  // Keyboard navigation untuk Lightbox Pop-up
+  // Helper pemformat tanggal postingan testimoni
+  const formatCardDate = (dateStr?: string) => {
+    if (!dateStr) return null;
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  // Keyboard navigation untuk Lightbox Pop-up & Modal Full Gallery
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (lightboxIndex === null) return;
-      if (e.key === 'Escape') setLightboxIndex(null);
-      if (uniqueItems.length > 1) {
+      if (e.key === 'Escape') {
+        if (lightboxIndex !== null) {
+          setLightboxIndex(null);
+        } else if (isFullGalleryOpen) {
+          setIsFullGalleryOpen(false);
+        }
+        return;
+      }
+      if (lightboxIndex !== null && uniqueItems.length > 1) {
         if (e.key === 'ArrowRight') {
           setLightboxIndex((prev) =>
             prev !== null ? (prev + 1) % uniqueItems.length : null
@@ -218,7 +261,7 @@ export const TestimonialsSection: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxIndex, uniqueItems.length]);
+  }, [lightboxIndex, isFullGalleryOpen, uniqueItems.length]);
 
   // Touch Swipe Handlers untuk Lightbox di Layar HP
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -304,7 +347,14 @@ export const TestimonialsSection: React.FC = () => {
               </span>
               <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0 ml-auto" />
             </div>
-            <p className="text-[10px] text-white/80 font-medium truncate">{item.subtitle}</p>
+            <div className="flex items-center justify-between text-[10px] text-white/80 font-medium">
+              <span className="truncate">{item.subtitle}</span>
+              {item.createdAt && formatCardDate(item.createdAt) && (
+                <span className="shrink-0 text-white/75 ml-1 text-[9px] bg-white/10 px-1.5 py-0.5 rounded-full font-sans">
+                  {formatCardDate(item.createdAt)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -545,6 +595,26 @@ export const TestimonialsSection: React.FC = () => {
                 )}
               </button>
             </div>
+
+            {/* Tombol Utama: "Lihat Semua Testimoni (X Ulasan)" */}
+            <div className="flex flex-col items-center justify-center mt-7 mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setGalleryVisibleCount(12);
+                  setIsFullGalleryOpen(true);
+                }}
+                className="btn-shimmer group relative inline-flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-gradient-to-r from-primary via-[#5B2C6F] to-primary text-white font-bold text-sm sm:text-base shadow-soft hover:shadow-card border-2 border-accent/40 hover:border-accent transition-all duration-300 hover:-translate-y-1 active:translate-y-0 cursor-pointer"
+              >
+                <Images className="w-5 h-5 text-accent animate-pulse" />
+                <span>Lihat Semua Testimoni ({uniqueItems.length} Ulasan)</span>
+                <ChevronRight className="w-4 h-4 text-accent transition-transform duration-200 group-hover:translate-x-1" />
+              </button>
+              <p className="text-xs text-charcoal-light mt-2.5 flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Tangkapan layar chat asli tanpa rekayasa dari para Bunda</span>
+              </p>
+            </div>
           </div>
         </RevealOnScroll>
 
@@ -658,11 +728,95 @@ export const TestimonialsSection: React.FC = () => {
       </div>
 
       {/* ======================================================== */}
+      {/* MODAL / LAYAR PENUH GALERI SEMUA TESTIMONI               */}
+      {/* ======================================================== */}
+      {isFullGalleryOpen && (
+        <div className="fixed inset-0 z-50 bg-[#FAF4FD] overflow-y-auto flex flex-col animate-fade-in select-none">
+          {/* Header Sticky */}
+          <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-primary/10 px-4 sm:px-6 py-3.5 sm:py-4 shadow-xs">
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setIsFullGalleryOpen(false)}
+                  className="w-10 h-10 rounded-full bg-primary/5 hover:bg-primary/10 text-primary flex items-center justify-center transition-colors shadow-2xs active:scale-95 shrink-0 cursor-pointer"
+                  title="Kembali ke Beranda"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-serif font-bold text-base sm:text-xl text-primary truncate">
+                      Galeri Testimoni WhatsApp
+                    </h2>
+                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200 shrink-0">
+                      <WhatsAppIcon className="w-3 h-3 text-emerald-600" />
+                      100% Asli
+                    </span>
+                  </div>
+                  <p className="text-xs text-charcoal-light mt-0.5 truncate">
+                    Menampilkan {Math.min(galleryVisibleCount, uniqueItems.length)} dari {uniqueItems.length} Ulasan Bunda Terverifikasi
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsFullGalleryOpen(false)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs sm:text-sm transition-all active:scale-95 shrink-0 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                <span className="hidden sm:inline">Tutup Galeri</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Body Grid Foto Screenshot WhatsApp */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 w-full flex-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+              {uniqueItems.slice(0, galleryVisibleCount).map((item, idx) => (
+                <div
+                  key={`full-grid-${item.id}-${idx}`}
+                  onClick={() => setLightboxIndex(idx)}
+                  className="w-full aspect-[9/16] rounded-2xl overflow-hidden bg-white border border-primary/10 shadow-soft hover:shadow-card hover:border-accent/40 transition-all duration-300 hover:-translate-y-1.5 relative group cursor-pointer"
+                  title="Klik untuk melihat resolusi penuh"
+                >
+                  {renderCardContent(item)}
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination / Tombol "Muat Lebih Banyak (+12 Foto)" */}
+            {galleryVisibleCount < uniqueItems.length ? (
+              <div className="flex flex-col items-center justify-center pt-10 pb-14 gap-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setGalleryVisibleCount((prev) => prev + 12)}
+                  className="btn-shimmer inline-flex items-center gap-2.5 px-7 sm:px-9 py-3.5 rounded-full bg-primary hover:bg-primary-dark text-white font-bold text-xs sm:text-sm shadow-soft hover:shadow-card transition-all active:scale-95 border border-accent/30 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-accent" />
+                  <span>Muat Lebih Banyak (+{Math.min(12, uniqueItems.length - galleryVisibleCount)} Foto)</span>
+                </button>
+                <span className="text-xs text-charcoal-light">
+                  Tersisa {uniqueItems.length - galleryVisibleCount} foto lainnya
+                </span>
+              </div>
+            ) : (
+              <div className="text-center pt-10 pb-14 text-xs sm:text-sm font-semibold text-charcoal-light flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Seluruh {uniqueItems.length} foto testimoni telah dimuat</span>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* ======================================================== */}
       {/* MODAL LIGHTBOX: POP-UP RESOLUSI PENUH                    */}
       {/* ======================================================== */}
       {lightboxIndex !== null && uniqueItems[lightboxIndex] && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fade-in select-none"
+          className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fade-in select-none"
           onClick={() => setLightboxIndex(null)}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}

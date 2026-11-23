@@ -1383,7 +1383,7 @@ export async function saveTestimonial(
   }
 
   const newTesti: Testimonial = {
-    id: `testi-${Date.now()}`,
+    id: `testi-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     image_url: testimonial.image_url,
     caption: testimonial.caption,
     is_active: testimonial.is_active ?? true,
