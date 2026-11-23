@@ -76,34 +76,32 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
     }
 
     if (!urlInput.trim()) {
-      warning('Harap masukkan link video TikTok atau angka ID videonya.');
+      warning('Harap masukkan URL video, kode embed <iframe>, atau angka ID video.');
       return;
     }
 
     if (isShortLink) {
       warning(
-        'Tautan vt.tiktok.com adalah link pendek. Silakan buka di browser terlebih dahulu, lalu salin URL lengkap yang berisi /video/angka...'
+        'Tautan vt.tiktok.com adalah link pendek. Silakan buka di browser terlebih dahulu, lalu salin URL lengkap yang berisi /video/angka, kode embed <iframe>, atau ID videonya.'
       );
       return;
     }
 
     if (!detectedVideoId) {
       warning(
-        'Format URL tidak valid. Harap gunakan URL video TikTok lengkap (misal: https://www.tiktok.com/@user/video/7438291029384712345) atau angka ID langsung.'
+        'Format input belum valid. Harap tempelkan salah satu: URL video TikTok lengkap, kode embed <iframe> lengkap, atau angka ID video langsung.'
       );
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Pastikan ada full URL jika user hanya menginput ID
-      const finalUrl = urlInput.trim().startsWith('http')
-        ? urlInput.trim()
-        : `https://www.tiktok.com/@indah_mom.baby_spa_comal/video/${detectedVideoId}`;
+      // Simpan URL bersih dengan format standar resmi ke kolom tiktok_url
+      const cleanUrl = `https://www.tiktok.com/@indah_mom.baby_spa_comal/video/${detectedVideoId}`;
 
       const saved = await saveTikTokVideo(adminPin, {
         title: title.trim(),
-        tiktok_url: finalUrl,
+        tiktok_url: cleanUrl,
         video_id: detectedVideoId,
         is_active: true,
       });
@@ -209,10 +207,41 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
 
       {/* 2. Form Tambah Video Baru */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <h3 className="font-serif font-bold text-base text-primary mb-4 flex items-center gap-2">
+        <h3 className="font-serif font-bold text-base text-primary mb-3 flex items-center gap-2">
           <Plus className="w-4 h-4 text-accent" />
           <span>Tambah Video TikTok Baru</span>
         </h3>
+
+        {/* Panduan 3 Format Input */}
+        <div className="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-charcoal">
+          <p className="font-bold text-primary mb-2 flex items-center gap-1.5">
+            <HelpCircle className="w-4 h-4 text-accent" />
+            <span>Mendukung 3 format input video otomatis:</span>
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px]">
+            <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+              <span className="font-bold text-primary block mb-0.5">1. URL Video TikTok</span>
+              <p className="text-[10px] text-charcoal-light mb-1">Link video lengkap dari browser:</p>
+              <code className="text-[10px] text-slate-700 font-mono bg-slate-100 px-1 py-0.5 rounded truncate block">
+                https://www.tiktok.com/@.../video/771055069...
+              </code>
+            </div>
+            <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+              <span className="font-bold text-primary block mb-0.5">2. Kode Embed &lt;iframe&gt;</span>
+              <p className="text-[10px] text-charcoal-light mb-1">Kode sematan resmi TikTok:</p>
+              <code className="text-[10px] text-slate-700 font-mono bg-slate-100 px-1 py-0.5 rounded truncate block">
+                &lt;iframe ... src="...player/v1/771055069..."&gt;
+              </code>
+            </div>
+            <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+              <span className="font-bold text-primary block mb-0.5">3. Angka Video ID</span>
+              <p className="text-[10px] text-charcoal-light mb-1">Hanya digit angka ID video:</p>
+              <code className="text-[10px] text-slate-700 font-mono bg-slate-100 px-1 py-0.5 rounded block">
+                7710550696680000789
+              </code>
+            </div>
+          </div>
+        </div>
 
         <form onSubmit={handleAddVideo} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -234,21 +263,21 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
               </span>
             </div>
 
-            {/* Link Video TikTok */}
+            {/* Link / Embed / ID Video TikTok */}
             <div>
               <label className="block text-xs font-bold text-charcoal mb-1.5">
-                Link Video TikTok atau ID Angka <span className="text-rose-500">*</span>
+                Link Video, Embed &lt;iframe&gt;, atau ID Angka <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="https://www.tiktok.com/@indah_mom.baby_spa_comal/video/7438291029384712345"
+                placeholder="Tempel URL, kode embed <iframe>, atau ID angka video..."
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-charcoal"
                 disabled={isSubmitting}
               />
               <span className="text-[10px] text-charcoal-light/70 mt-1 block">
-                Salin tautan video lengkap dari aplikasi atau browser.
+                Tempel link video TikTok, kode embed &lt;iframe&gt;, atau angka ID video langsung.
               </span>
             </div>
           </div>
@@ -262,22 +291,35 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
                   <div>
                     <strong className="font-bold block">Tautan Pendek (vt.tiktok.com) Terdeteksi!</strong>
                     <span>
-                      Harap buka link tersebut di browser HP atau laptop Bunda terlebih dahulu. Setelah halaman video terbuka penuh di browser, salin URL di address bar yang berisi <code className="bg-amber-100 px-1 py-0.5 rounded text-[11px] font-mono">/video/743829...</code> lalu tempelkan ke sini.
+                      Harap buka link tersebut di browser HP atau laptop Bunda terlebih dahulu. Setelah halaman video terbuka penuh di browser, salin URL di address bar yang berisi <code className="bg-amber-100 px-1 py-0.5 rounded text-[11px] font-mono">/video/771...</code> atau salin kode embed-nya, lalu tempelkan ke sini.
                     </span>
                   </div>
                 </div>
               ) : detectedVideoId ? (
-                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-fade-in">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                  <span>
-                    <strong>ID Video Terdeteksi:</strong> <code className="font-mono bg-emerald-100 px-1.5 py-0.5 rounded text-[11px] font-bold">{detectedVideoId}</code> (Siap disematkan ke player resmi)
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                    <div>
+                      <span>
+                        <strong>ID Video Terdeteksi:</strong>{' '}
+                        <code className="font-mono bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded text-[11px] font-bold">
+                          {detectedVideoId}
+                        </code>
+                      </span>
+                      <span className="block text-[11px] text-emerald-700 font-mono mt-0.5">
+                        URL Bersih: https://www.tiktok.com/@indah_mom.baby_spa_comal/video/{detectedVideoId}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full font-bold self-start sm:self-auto shrink-0">
+                    ✓ Format Valid
                   </span>
                 </div>
               ) : (
                 <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2 animate-fade-in">
                   <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                   <span>
-                    Pola URL belum dikenali. Pastikan URL berisi <code className="font-mono bg-rose-100 px-1 py-0.5 rounded">/video/[angka_id]</code> atau langsung tempelkan angka ID-nya.
+                    Format belum dikenali. Pastikan menempelkan <strong>URL video TikTok</strong>, <strong>kode embed &lt;iframe&gt;</strong>, atau <strong>angka Video ID</strong> (15-25 digit).
                   </span>
                 </div>
               )}

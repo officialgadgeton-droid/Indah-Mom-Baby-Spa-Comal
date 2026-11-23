@@ -1492,32 +1492,18 @@ export async function deleteTestimonial(pin: string, id: string): Promise<boolea
 // ==========================================
 
 /**
- * Mengekstrak angka ID video dari URL TikTok atau langsung menerima angka ID.
- * Contoh URL:
- * - https://www.tiktok.com/@indah_mom.baby_spa_comal/video/7438291029384712345
- * - https://m.tiktok.com/v/7438291029384712345.html
- * - https://www.tiktok.com/embed/v2/7438291029384712345
+ * Mengekstrak angka ID video dari salah satu dari 3 format input:
+ * 1. URL Video TikTok (contoh: https://www.tiktok.com/@indah_mom.baby_spa_comal/video/7710550696680000789)
+ * 2. Kode Embed <iframe> lengkap dari TikTok (contoh: <iframe ... src="https://www.tiktok.com/player/v1/7710550696680000789?..."></iframe>)
+ * 3. Angka Video ID langsung (contoh: 7710550696680000789)
  */
-export function extractTikTokVideoId(urlOrId: string): string | null {
-  if (!urlOrId) return null;
-  const trimmed = urlOrId.trim();
-
-  // Jika user langsung memasukkan digit angka video ID
-  if (/^\d{15,25}$/.test(trimmed)) {
-    return trimmed;
+export function extractTikTokVideoId(input: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  const match = trimmed.match(/player\/v1\/(\d+)|\/video\/(\d+)|^(\d{15,25})$/);
+  if (match) {
+    return match[1] || match[2] || match[3] || null;
   }
-
-  // Regex pola URL video TikTok standar
-  const match =
-    trimmed.match(/\/video\/(\d+)/i) ||
-    trimmed.match(/\/v\/(\d+)/i) ||
-    trimmed.match(/embed\/v2\/(\d+)/i) ||
-    trimmed.match(/modal_id=(\d+)/i);
-
-  if (match && match[1]) {
-    return match[1];
-  }
-
   return null;
 }
 
@@ -1639,21 +1625,24 @@ export async function saveTikTokVideo(
   const effectivePin = pin || getAdminSessionPin();
   const isUpdate = Boolean(video.id && !video.id.startsWith('tiktok-sample-') && !video.id.startsWith('tiktok-local-'));
 
+  const cleanVideoId = video.video_id.trim();
+  const cleanTiktokUrl = `https://www.tiktok.com/@indah_mom.baby_spa_comal/video/${cleanVideoId}`;
+
   if (supabase) {
     try {
       const resId = await adminManageTikTok(effectivePin, isUpdate ? 'update' : 'create', {
         id: isUpdate ? video.id : undefined,
         title: video.title.trim(),
-        tiktok_url: video.tiktok_url.trim(),
-        video_id: video.video_id.trim(),
+        tiktok_url: cleanTiktokUrl,
+        video_id: cleanVideoId,
         is_active: video.is_active ?? true,
       });
 
       const savedItem: TikTokVideo = {
         id: resId || video.id || `tiktok-saved-${Date.now()}`,
         title: video.title.trim(),
-        tiktok_url: video.tiktok_url.trim(),
-        video_id: video.video_id.trim(),
+        tiktok_url: cleanTiktokUrl,
+        video_id: cleanVideoId,
         is_active: video.is_active ?? true,
         created_at: new Date().toISOString(),
       };
@@ -1683,7 +1672,9 @@ export async function saveTikTokVideo(
     if (idx !== -1) {
       list[idx] = {
         ...list[idx],
-        ...video,
+        title: video.title.trim(),
+        tiktok_url: cleanTiktokUrl,
+        video_id: cleanVideoId,
         is_active: video.is_active ?? list[idx].is_active,
       };
       localStorage.setItem(STORAGE_KEYS.TIKTOK_VIDEOS, JSON.stringify(list));
@@ -1695,8 +1686,8 @@ export async function saveTikTokVideo(
   const newVideo: TikTokVideo = {
     id: `tiktok-local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     title: video.title.trim(),
-    tiktok_url: video.tiktok_url.trim(),
-    video_id: video.video_id.trim(),
+    tiktok_url: cleanTiktokUrl,
+    video_id: cleanVideoId,
     is_active: video.is_active ?? true,
     created_at: new Date().toISOString(),
   };
