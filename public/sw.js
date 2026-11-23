@@ -2,12 +2,14 @@
 // Menggunakan strategi Network-First agar data reservasi & Supabase selalu segar,
 // namun tetap memenuhi standar PWA Chrome Android & iOS Fullscreen.
 
-const CACHE_NAME = 'indah-spa-pwa-v1';
+const CACHE_NAME = 'indah-spa-pwa-v2';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/logo.png'
+  '/logo.png',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // 1. Install Event: Pra-cache aset dasar & langsung aktif tanpa menunggu
