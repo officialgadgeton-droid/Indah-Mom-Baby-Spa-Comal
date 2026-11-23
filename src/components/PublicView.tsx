@@ -28,9 +28,12 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
   const [services, setServices] = useState<Service[]>([]);
   const [selectedServicePreset, setSelectedServicePreset] = useState<Service | null>(null);
   const [settings, setSettings] = useState<AppSettings>(() => getLocalSettings());
-  const [operationalStatus, setOperationalStatus] = useState<ClinicOperationalStatus>({
-    status: 'open',
-    note: '',
+  const [operationalStatus, setOperationalStatus] = useState<ClinicOperationalStatus>(() => {
+    try {
+      const raw = localStorage.getItem('indah_spa_operational_status');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return { status: 'open', note: '' };
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -186,14 +189,17 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
                 <div>
                   <h3 className="font-bold text-sm sm:text-base leading-snug">
                     {operationalStatus.status === 'busy_homecare'
-                      ? 'Info Praktik Hari Ini: Bidan Sedang Bertugas Homecare / Persalinan'
-                      : 'Info Praktik Hari Ini: Klinik Tutup Sementara'}
+                      ? 'Sedang Homecare / Persalinan'
+                      : 'Klinik Tutup Hari Ini'}
                   </h3>
                   <p className="text-xs sm:text-sm mt-1 leading-relaxed opacity-90">
-                    {operationalStatus.note ||
-                      (operationalStatus.status === 'busy_homecare'
-                        ? 'Bidan sedang bertugas di luar/persalinan, reservasi online tetap berjalan & akan segera dikonfirmasi via WhatsApp.'
-                        : 'Praktik klinik hari ini tutup/libur. Bunda tetap dapat memilih jadwal reservasi untuk hari berikutnya.')}
+                    {operationalStatus.note ? (
+                      <span className="font-medium">{operationalStatus.note}</span>
+                    ) : operationalStatus.status === 'busy_homecare' ? (
+                      'Bidan sedang bertugas di luar/persalinan, reservasi online tetap berjalan & akan segera dikonfirmasi via WhatsApp.'
+                    ) : (
+                      'Praktik klinik hari ini sedang tutup. Bunda tetap dapat melakukan reservasi online untuk jadwal hari berikutnya.'
+                    )}
                   </p>
                 </div>
               </div>

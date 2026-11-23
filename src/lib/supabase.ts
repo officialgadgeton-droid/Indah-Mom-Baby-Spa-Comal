@@ -65,64 +65,26 @@ function getLocalServices(): Service[] {
 function getLocalBookings(): Booking[] {
   const data = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
   if (!data) {
-    const sampleBookings: Booking[] = [
-      {
-        id: 'bk-sample-1',
-        booking_code: 'IMB-20261122-A1B2',
-        visit_type: 'Datang ke Klinik',
-        service_id: 'srv-bk-2',
-        service_name: 'Baby Spa (Gymball, Swim, Massage)',
-        booking_date: new Date().toISOString().split('T')[0],
-        booking_time: '10:00',
-        mom_name: 'Bunda Rina Setyowati',
-        whatsapp_number: '081234567891',
-        child_name: 'Alvaro',
-        child_age: '6 Bulan',
-        address: 'Comal, Pemalang',
-        notes: 'Pertama kali coba baby spa, tolong dibimbing ya bidan.',
-        status: 'confirmed',
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'bk-sample-2',
-        booking_code: 'IMB-20261122-C3D4',
-        visit_type: 'Homecare - Bidan ke Rumah',
-        service_id: 'srv-tp-1',
-        service_name: 'Paket Bapil (Sinar, Massage, Uap)',
-        booking_date: new Date().toISOString().split('T')[0],
-        booking_time: '13:30',
-        mom_name: 'Bunda Anisa Fitri',
-        whatsapp_number: '085712349988',
-        child_name: 'Baby Kenzo',
-        child_age: '1 Bulan',
-        address: 'Jl. Ahmad Yani No. 14, Comal (Depan Polsek Comal)',
-        notes: 'Bayi batuk pilek 2 hari, hidung tersumbat.',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'bk-sample-3',
-        booking_code: 'IMB-20261115-E5F6',
-        visit_type: 'Datang ke Klinik',
-        service_id: 'srv-bk-1',
-        service_name: 'Baby Massage & Spa Sehat',
-        booking_date: new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0],
-        booking_time: '09:00',
-        mom_name: 'Bunda Rina Setyowati',
-        whatsapp_number: '081234567891',
-        child_name: 'Alvaro',
-        child_age: '6 Bulan',
-        address: 'Comal, Pemalang',
-        notes: 'Alhamdulillah pijatan pertama sangat cocok, anak tidur lelap.',
-        status: 'completed',
-        created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-      }
-    ];
-    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(sampleBookings));
-    return sampleBookings;
+    return [];
   }
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      // Bersihkan seluruh data dummy bawaan (bk-sample, Bunda Rina, Bunda Anisa)
+      const cleaned = parsed.filter(
+        (b: Booking) =>
+          b &&
+          b.id &&
+          !b.id.startsWith('bk-sample') &&
+          b.mom_name !== 'Bunda Rina Setyowati' &&
+          b.mom_name !== 'Bunda Anisa Fitri'
+      );
+      if (cleaned.length !== parsed.length) {
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(cleaned));
+      }
+      return cleaned;
+    }
+    return [];
   } catch {
     return [];
   }
@@ -550,37 +512,35 @@ export async function fetchAdminBookings(
   const validPin = (pin && pin.trim()) || getAdminSessionPin();
 
   if (supabase) {
-    try {
-      let { data, error } = await supabase.rpc('admin_get_bookings', {
-        pin_input: validPin,
-        p_date: filterDate || null,
-        p_status: filterStatus === 'all' || !filterStatus ? null : filterStatus,
-      });
+    const rpcParams: Record<string, any> = { pin_input: validPin };
+    if (filterDate) rpcParams.p_date = filterDate;
+    if (filterStatus && filterStatus !== 'all') rpcParams.p_status = filterStatus;
 
-      if (error) {
-        // Fallback untuk kompatibilitas jika database masih menggunakan RPC get_admin_bookings
-        const fb = await supabase.rpc('get_admin_bookings', {
-          pin_input: validPin,
-          p_date: filterDate || null,
-          p_status: filterStatus === 'all' || !filterStatus ? null : filterStatus,
-        });
-        if (!fb.error && fb.data) {
-          data = fb.data;
-          error = null;
-        }
-      }
+    // 1. Panggil get_admin_bookings sesuai instruksi
+    let { data, error } = await supabase.rpc('get_admin_bookings', rpcParams);
 
-      if (!error && data) {
-        return data as Booking[];
+    // 2. Fallback ke admin_get_bookings jika database menggunakan nama alias
+    if (error) {
+      const fb = await supabase.rpc('admin_get_bookings', rpcParams);
+      if (!fb.error && fb.data) {
+        data = fb.data;
+        error = null;
       }
-      if (error) {
-        console.warn('RPC admin_get_bookings error:', error.message || error);
-      }
-    } catch (e) {
-      console.warn('RPC admin_get_bookings error, fallback local:', e);
+    }
+
+    // JANGAN gunakan mock data (Bunda Rina Setyowati, Bunda Anisa Fitri, dll.) jika Supabase terhubung!
+    // Lempar error asli dari RPC agar antarmuka UI / Toast menampilkan pesan kegagalan yang sebenarnya
+    if (error) {
+      console.error('RPC get_admin_bookings error:', error);
+      throw new Error(error.message || 'Gagal memuat data reservasi dari Supabase.');
+    }
+
+    if (data) {
+      return data as Booking[];
     }
   }
 
+  // Fallback Local Storage HANYA jika Supabase tidak dikonfigurasi sama sekali (mode lokal murni)
   let list = getLocalBookings();
   if (filterDate) {
     list = list.filter(b => b.booking_date === filterDate);
@@ -845,13 +805,28 @@ export async function fetchClinicSettings(): Promise<ClinicOperationalStatus> {
     try {
       // Keamanan: Hanya memilih kolom publik ('id, clinic_name, operational_status, operational_note, updated_at')
       // dan TIDAK PERNAH menyertakan kolom rahasia seperti admin_pin
-      const { data, error } = await supabase
+      // Prioritaskan baris kunci utama 'clinic_operational_status'
+      let { data, error } = await supabase
         .from('clinic_settings')
         .select('id, clinic_name, operational_status, operational_note, updated_at')
-        .not('operational_status', 'is', null)
-        .order('updated_at', { ascending: false, nullsFirst: false })
-        .limit(1)
+        .eq('key', 'clinic_operational_status')
         .maybeSingle();
+
+      if (error || !data || !data.operational_status) {
+        // Fallback jika disimpan pada baris lain tapi memiliki kolom operational_status
+        const fb = await supabase
+          .from('clinic_settings')
+          .select('id, clinic_name, operational_status, operational_note, updated_at')
+          .not('operational_status', 'is', null)
+          .order('updated_at', { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!fb.error && fb.data) {
+          data = fb.data;
+          error = null;
+        }
+      }
 
       if (!error && data && data.operational_status) {
         const result: ClinicOperationalStatus = {
@@ -863,27 +838,6 @@ export async function fetchClinicSettings(): Promise<ClinicOperationalStatus> {
         };
         localStorage.setItem(STORAGE_KEYS.OPERATIONAL_STATUS, JSON.stringify(result));
         return result;
-      }
-
-      if (error) {
-        // Fallback jika database belum memiliki kolom id / clinic_name tambahan
-        const fallbackRes = await supabase
-          .from('clinic_settings')
-          .select('operational_status, operational_note, updated_at')
-          .not('operational_status', 'is', null)
-          .order('updated_at', { ascending: false, nullsFirst: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (!fallbackRes.error && fallbackRes.data && fallbackRes.data.operational_status) {
-          const result: ClinicOperationalStatus = {
-            status: (fallbackRes.data.operational_status as OperationalStatus) || 'open',
-            note: fallbackRes.data.operational_note || '',
-            updated_at: fallbackRes.data.updated_at,
-          };
-          localStorage.setItem(STORAGE_KEYS.OPERATIONAL_STATUS, JSON.stringify(result));
-          return result;
-        }
       }
     } catch (e) {
       console.warn('Gagal membaca operational status dari Supabase (fallback local):', e);
@@ -912,41 +866,21 @@ export async function updateClinicOperationalStatus(
   note?: string
 ): Promise<boolean> {
   const effectivePin = (pin && pin.trim()) || getAdminSessionPin();
+  if (!effectivePin) {
+    throw new Error('PIN sesi admin tidak ditemukan. Silakan login kembali.');
+  }
   const cleanNote = note && note.trim() ? note.trim() : null;
 
   if (supabase) {
-    try {
-      const { error } = await supabase.rpc('admin_update_operational_status', {
-        pin_input: effectivePin,
-        p_status: status,
-        p_note: cleanNote,
-      });
+    const { error } = await supabase.rpc('admin_update_operational_status', {
+      pin_input: effectivePin,
+      p_status: status,
+      p_note: cleanNote,
+    });
 
-      if (error) {
-        console.warn('RPC admin_update_operational_status error, fallback direct upsert/local:', error);
-        await supabase
-          .from('clinic_settings')
-          .upsert({
-            key: 'clinic_operational_status',
-            value: status,
-            operational_status: status,
-            operational_note: cleanNote,
-            updated_at: new Date().toISOString(),
-          });
-      }
-    } catch (e) {
-      console.warn('RPC admin_update_operational_status exception, fallback local:', e);
-      try {
-        await supabase
-          .from('clinic_settings')
-          .upsert({
-            key: 'clinic_operational_status',
-            value: status,
-            operational_status: status,
-            operational_note: cleanNote,
-            updated_at: new Date().toISOString(),
-          });
-      } catch {}
+    if (error) {
+      console.error('RPC admin_update_operational_status error:', error);
+      throw new Error(error.message || 'Gagal memperbarui status operasional di Supabase.');
     }
   }
 

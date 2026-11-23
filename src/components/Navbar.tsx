@@ -112,13 +112,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       };
     }
     return {
-      label: 'Klinik Tutup Sementara',
-      title: 'Info Praktik Hari Ini: Klinik Tutup Sementara',
+      label: 'Klinik Tutup Hari Ini',
+      title: 'Info Praktik Hari Ini: Klinik Tutup Hari Ini',
       color: 'bg-rose-50 text-rose-950 border-rose-300',
       dot: 'bg-rose-500',
       note:
         operationalStatus.note ||
-        'Praktik klinik hari ini tutup/libur. Bunda tetap dapat memilih jadwal reservasi untuk hari berikutnya.',
+        'Praktik klinik hari ini sedang tutup. Bunda tetap dapat melakukan reservasi online untuk jadwal hari berikutnya.',
     };
   };
 
@@ -147,7 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <strong className="font-bold">
                     {operationalStatus.status === 'busy_homecare'
                       ? 'Info Praktik Hari Ini: Bidan Sedang Bertugas Homecare / Persalinan'
-                      : 'Info Praktik Hari Ini: Klinik Tutup Sementara'}
+                      : 'Info Praktik Hari Ini: Klinik Tutup Hari Ini'}
                   </strong>{' '}
                   <span className="opacity-95">
                     —{' '}

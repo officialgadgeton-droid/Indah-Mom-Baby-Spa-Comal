@@ -141,10 +141,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleSaveOperational = async (targetStatus?: OperationalStatus) => {
     const statusToSave = targetStatus || opStatus;
+    const pin = (activeAdminPin && activeAdminPin.trim()) || getAdminSessionPin();
+    if (!pin) {
+      error('PIN sesi admin tidak ditemukan. Silakan login kembali.');
+      return;
+    }
+
     setIsSavingOpStatus(true);
     try {
       const ok = await updateClinicOperationalStatus(
-        activeAdminPin,
+        pin,
         statusToSave,
         opNote
       );
@@ -156,15 +162,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               ? 'Buka Normal'
               : statusToSave === 'busy_homecare'
               ? 'Sedang Homecare / Persalinan'
-              : 'Tutup Praktik Hari Ini'
+              : 'Tutup Hari Ini'
           }" dan langsung tersinkronkan ke website publik.`
         );
       } else {
         error('Gagal memperbarui status operasional.');
       }
     } catch (err: any) {
-      console.error(err);
-      error(err.message || 'Terjadi kesalahan saat menyimpan status operasional.');
+      console.error('Error saat update status operasional:', err);
+      error(err.message || 'Terjadi kesalahan saat menyimpan status operasional ke database.');
     } finally {
       setIsSavingOpStatus(false);
     }
@@ -387,7 +393,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       ? 'Buka Normal'
                       : opStatus === 'busy_homecare'
                       ? 'Sedang Homecare / Persalinan'
-                      : 'Tutup Praktik Hari Ini'}
+                      : 'Tutup Hari Ini'}
                   </span>
                 </div>
                 <p className="text-[11px] text-charcoal-light mt-0.5">
