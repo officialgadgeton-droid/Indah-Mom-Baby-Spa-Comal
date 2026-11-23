@@ -97,7 +97,9 @@ CREATE TABLE IF NOT EXISTS public.clinic_settings (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- Kolom Status Operasional Real-Time
+-- Kolom Status Operasional Real-Time & Identitas Publik Klinik
+ALTER TABLE public.clinic_settings ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid();
+ALTER TABLE public.clinic_settings ADD COLUMN IF NOT EXISTS clinic_name VARCHAR(255) DEFAULT 'Indah Mom & Baby Spa Comal';
 ALTER TABLE public.clinic_settings ADD COLUMN IF NOT EXISTS operational_status VARCHAR(50) DEFAULT 'open';
 ALTER TABLE public.clinic_settings ADD COLUMN IF NOT EXISTS operational_note TEXT;
 
@@ -308,7 +310,7 @@ CREATE POLICY "Allow anon manage clinic_settings"
 -- RPC FUNCTIONS (SECURITY DEFINER)
 -- ====================================================================
 
--- 1. get_booked_slots: Mengembalikan jam-jam yang sudah terbooking (confirmed)
+-- 1. get_booked_slots & get_public_booked_slots: Mengembalikan jam-jam yang sudah terbooking (confirmed)
 -- atau diblokir admin pada tanggal tertentu tanpa mengekspos data pribadi pasien
 CREATE OR REPLACE FUNCTION public.get_booked_slots(target_date date)
 RETURNS TABLE (booking_time text, reason text)
@@ -326,6 +328,18 @@ BEGIN
     SELECT COALESCE(bs.block_time, 'ALL')::text, COALESCE(bs.reason, 'Jadwal Libur')::text
     FROM public.blocked_slots bs
     WHERE bs.block_date = target_date;
+END;
+$$;
+
+-- Alias get_public_booked_slots untuk query publik jadwal yang aman dari sisi frontend
+CREATE OR REPLACE FUNCTION public.get_public_booked_slots(target_date date)
+RETURNS TABLE (booking_time text, reason text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM public.get_booked_slots(target_date);
 END;
 $$;
 
@@ -367,7 +381,7 @@ BEGIN
 END;
 $$;
 
--- 3. get_admin_bookings: Mengambil seluruh reservasi untuk admin terverifikasi
+-- 3. get_admin_bookings & admin_get_bookings: Mengambil seluruh reservasi untuk admin terverifikasi
 CREATE OR REPLACE FUNCTION public.get_admin_bookings(
     pin_input text,
     p_date date DEFAULT NULL,
@@ -388,6 +402,22 @@ BEGIN
     WHERE (p_date IS NULL OR booking_date = p_date)
       AND (p_status IS NULL OR p_status = 'all' OR status = p_status)
     ORDER BY booking_date DESC, booking_time ASC;
+END;
+$$;
+
+-- Alias admin_get_bookings untuk konsistensi panggilan RPC admin frontend
+CREATE OR REPLACE FUNCTION public.admin_get_bookings(
+    pin_input text,
+    p_date date DEFAULT NULL,
+    p_status text DEFAULT NULL
+)
+RETURNS SETOF public.bookings
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM public.get_admin_bookings(pin_input, p_date, p_status);
 END;
 $$;
 
@@ -780,8 +810,10 @@ $$;
 
 -- Berikan hak akses eksekusi RPC ke anon & authenticated
 GRANT EXECUTE ON FUNCTION public.get_booked_slots(date) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_public_booked_slots(date) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.verify_admin_pin(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_admin_bookings(text, date, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_get_bookings(text, date, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.update_booking_status(text, uuid, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_create_manual_booking(text, text, uuid, text, numeric, date, text, text, text, text, text, text, text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_manage_service(text, text, uuid, text, text, text, int, text, boolean, int) TO anon, authenticated;

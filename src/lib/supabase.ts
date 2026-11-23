@@ -272,9 +272,21 @@ export const fetchAllServicesAdmin = fetchAllServices;
 export async function fetchBookedSlots(targetDate: string): Promise<{ time: string; reason: string }[]> {
   if (supabase) {
     try {
-      const { data, error } = await supabase.rpc('get_booked_slots', {
+      let { data, error } = await supabase.rpc('get_public_booked_slots', {
         target_date: targetDate,
       });
+
+      if (error) {
+        // Fallback untuk kompatibilitas jika database masih menggunakan RPC get_booked_slots
+        const fb = await supabase.rpc('get_booked_slots', {
+          target_date: targetDate,
+        });
+        if (!fb.error && fb.data) {
+          data = fb.data;
+          error = null;
+        }
+      }
+
       if (!error && data) {
         return data.map((item: { booking_time: string; reason: string }) => ({
           time: item.booking_time,
@@ -371,12 +383,23 @@ export async function createBooking(
 export const DEFAULT_ADMIN_PIN_HASH = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
 export const STORAGE_KEY_CUSTOM_PIN_HASH = 'indah_spa_custom_pin_hash';
 export const ADMIN_SESSION_PIN_KEY = 'indah_spa_session_pin';
+export const ADMIN_IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 60 menit idle timeout
 
 /**
- * Mengambil PIN sesi admin yang valid dari sessionStorage
+ * Mengambil PIN sesi admin yang valid dari sessionStorage dengan proteksi idle timeout 60 menit
  */
 export function getAdminSessionPin(): string {
   if (typeof window === 'undefined') return '';
+
+  const lastActivityStr = sessionStorage.getItem('imb_admin_last_activity');
+  if (lastActivityStr) {
+    const lastActivity = parseInt(lastActivityStr, 10);
+    if (lastActivity && Date.now() - lastActivity > ADMIN_IDLE_TIMEOUT_MS) {
+      clearAdminSessionPin();
+      return '';
+    }
+  }
+
   return (
     sessionStorage.getItem(ADMIN_SESSION_PIN_KEY) ||
     sessionStorage.getItem('imb_admin_pin') ||
@@ -389,17 +412,25 @@ export function getAdminSessionPin(): string {
  */
 export function setAdminSessionPin(pin: string): void {
   if (typeof window === 'undefined') return;
+  const now = Date.now().toString();
   sessionStorage.setItem(ADMIN_SESSION_PIN_KEY, pin);
   sessionStorage.setItem('imb_admin_pin', pin);
+  if (!sessionStorage.getItem('imb_admin_session_start')) {
+    sessionStorage.setItem('imb_admin_session_start', now);
+  }
+  sessionStorage.setItem('imb_admin_last_activity', now);
 }
 
 /**
- * Menghapus PIN sesi admin dari sessionStorage
+ * Menghapus PIN sesi admin dan status aktivitas dari sessionStorage
  */
 export function clearAdminSessionPin(): void {
   if (typeof window === 'undefined') return;
   sessionStorage.removeItem(ADMIN_SESSION_PIN_KEY);
   sessionStorage.removeItem('imb_admin_pin');
+  sessionStorage.removeItem('imb_admin_session_start');
+  sessionStorage.removeItem('imb_admin_last_activity');
+  sessionStorage.removeItem('indah_spa_tab_hidden_at');
 }
 
 export async function hashPin(pin: string): Promise<string> {
@@ -520,19 +551,33 @@ export async function fetchAdminBookings(
 
   if (supabase) {
     try {
-      const { data, error } = await supabase.rpc('get_admin_bookings', {
+      let { data, error } = await supabase.rpc('admin_get_bookings', {
         pin_input: validPin,
         p_date: filterDate || null,
         p_status: filterStatus === 'all' || !filterStatus ? null : filterStatus,
       });
+
+      if (error) {
+        // Fallback untuk kompatibilitas jika database masih menggunakan RPC get_admin_bookings
+        const fb = await supabase.rpc('get_admin_bookings', {
+          pin_input: validPin,
+          p_date: filterDate || null,
+          p_status: filterStatus === 'all' || !filterStatus ? null : filterStatus,
+        });
+        if (!fb.error && fb.data) {
+          data = fb.data;
+          error = null;
+        }
+      }
+
       if (!error && data) {
         return data as Booking[];
       }
       if (error) {
-        console.warn('RPC get_admin_bookings error:', error.message || error);
+        console.warn('RPC admin_get_bookings error:', error.message || error);
       }
     } catch (e) {
-      console.warn('RPC get_admin_bookings error, fallback local:', e);
+      console.warn('RPC admin_get_bookings error, fallback local:', e);
     }
   }
 
@@ -798,9 +843,11 @@ export async function adminSaveTreatmentNote(
 export async function fetchClinicSettings(): Promise<ClinicOperationalStatus> {
   if (supabase) {
     try {
+      // Keamanan: Hanya memilih kolom publik ('id, clinic_name, operational_status, operational_note, updated_at')
+      // dan TIDAK PERNAH menyertakan kolom rahasia seperti admin_pin
       const { data, error } = await supabase
         .from('clinic_settings')
-        .select('operational_status, operational_note, updated_at')
+        .select('id, clinic_name, operational_status, operational_note, updated_at')
         .not('operational_status', 'is', null)
         .order('updated_at', { ascending: false, nullsFirst: false })
         .limit(1)
@@ -808,12 +855,35 @@ export async function fetchClinicSettings(): Promise<ClinicOperationalStatus> {
 
       if (!error && data && data.operational_status) {
         const result: ClinicOperationalStatus = {
+          id: (data as any).id,
+          clinic_name: (data as any).clinic_name || 'Indah Mom & Baby Spa Comal',
           status: (data.operational_status as OperationalStatus) || 'open',
           note: data.operational_note || '',
           updated_at: data.updated_at,
         };
         localStorage.setItem(STORAGE_KEYS.OPERATIONAL_STATUS, JSON.stringify(result));
         return result;
+      }
+
+      if (error) {
+        // Fallback jika database belum memiliki kolom id / clinic_name tambahan
+        const fallbackRes = await supabase
+          .from('clinic_settings')
+          .select('operational_status, operational_note, updated_at')
+          .not('operational_status', 'is', null)
+          .order('updated_at', { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!fallbackRes.error && fallbackRes.data && fallbackRes.data.operational_status) {
+          const result: ClinicOperationalStatus = {
+            status: (fallbackRes.data.operational_status as OperationalStatus) || 'open',
+            note: fallbackRes.data.operational_note || '',
+            updated_at: fallbackRes.data.updated_at,
+          };
+          localStorage.setItem(STORAGE_KEYS.OPERATIONAL_STATUS, JSON.stringify(result));
+          return result;
+        }
       }
     } catch (e) {
       console.warn('Gagal membaca operational status dari Supabase (fallback local):', e);

@@ -17,7 +17,7 @@ const STORAGE_KEYS = {
 
 // Batas waktu sesi keamanan admin
 const MAX_SESSION_DURATION_MS = 2 * 60 * 60 * 1000; // 2 jam maksimal sesi aktif
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 menit auto-lock jika tidak ada aktivitas
+const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 60 menit auto-lock jika tab/pengguna tidak aktif (idle timeout)
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) => {
   const { warning } = useToast();
@@ -28,6 +28,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
     sessionStorage.removeItem(STORAGE_KEYS.SESSION_PIN);
     sessionStorage.removeItem(STORAGE_KEYS.SESSION_START);
     sessionStorage.removeItem(STORAGE_KEYS.LAST_ACTIVITY);
+    sessionStorage.removeItem('indah_spa_tab_hidden_at');
   }, []);
 
   // Inisialisasi status autentikasi dari sessionStorage dengan validasi batas waktu
@@ -45,7 +46,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
       return null;
     }
 
-    // Cek idle auto-lock 30 menit
+    // Cek idle auto-lock 60 menit
     if (lastActivity && now - lastActivity > IDLE_TIMEOUT_MS) {
       clearAdminSession();
       return null;
@@ -80,7 +81,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
     }
   };
 
-  // Tracking aktivitas pengguna untuk idle auto-lock (30 menit) & batas durasi (2 jam)
+  // Tracking aktivitas pengguna untuk idle auto-lock (60 menit) & batas durasi (2 jam)
   useEffect(() => {
     if (!adminPin) return;
 
@@ -93,10 +94,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
       }
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        sessionStorage.setItem('indah_spa_tab_hidden_at', Date.now().toString());
+      } else {
+        const hiddenAt = parseInt(sessionStorage.getItem('indah_spa_tab_hidden_at') || '0', 10);
+        const lastAct = parseInt(sessionStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY) || '0', 10);
+        const now = Date.now();
+
+        if ((hiddenAt && now - hiddenAt >= IDLE_TIMEOUT_MS) || (lastAct && now - lastAct >= IDLE_TIMEOUT_MS)) {
+          handleAdminLogout();
+          warning('Sesi admin telah berakhir karena tab tidak aktif lebih dari 60 menit.');
+          return;
+        }
+        handleUserInteraction();
+      }
+    };
+
     const trackedEvents = ['mousedown', 'keydown', 'scroll', 'touchstart'];
     trackedEvents.forEach(eventName => {
       window.addEventListener(eventName, handleUserInteraction, { passive: true });
     });
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Pengecekan berkala setiap 10 detik
     const timerInterval = window.setInterval(() => {
@@ -111,10 +130,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
         return;
       }
 
-      // 2. Cek inaktivitas melebihi 30 menit
+      // 2. Cek inaktivitas melebihi 60 menit (idle timeout)
       if (lastActivity && now - lastActivity >= IDLE_TIMEOUT_MS) {
         handleAdminLogout();
-        warning('Sesi admin terkunci otomatis karena tidak ada aktivitas selama 30 menit.');
+        warning('Sesi admin telah berakhir karena tab tidak aktif lebih dari 60 menit.');
         return;
       }
     }, 10000);
@@ -123,6 +142,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
       trackedEvents.forEach(eventName => {
         window.removeEventListener(eventName, handleUserInteraction);
       });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(timerInterval);
     };
   }, [adminPin, handleAdminLogout, warning]);

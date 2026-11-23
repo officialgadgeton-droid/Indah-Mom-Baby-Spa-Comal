@@ -267,6 +267,31 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ mode, onSuccess, onBackT
           </div>
         ) : (
           <div className="mb-6">
+            {/* Input field dengan autoComplete="off" agar browser tidak menyimpan PIN di password manager */}
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={pin}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-lpignore="true"
+              data-form-type="other"
+              name="admin_pin"
+              id="admin_pin"
+              onChange={e => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setPin(val);
+                setHasError(false);
+                if (val.length === 6) verify(val);
+              }}
+              className="sr-only"
+              aria-label="PIN Admin 6 Digit"
+              tabIndex={-1}
+            />
             <div className="flex justify-center items-center gap-3">
               {[0, 1, 2, 3, 4, 5].map(idx => {
                 const isFilled = pin.length > idx;

@@ -26,6 +26,7 @@ import {
   getAdminSessionPin,
   fetchClinicOperationalStatus,
   updateClinicOperationalStatus,
+  fetchAdminBookings,
 } from '../../lib/supabase';
 import { OperationalStatus, ClinicOperationalStatus } from '../../types';
 import { useToast } from '../../context/ToastContext';
@@ -101,6 +102,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       window.removeEventListener('indah_spa_operational_status_updated', handleOpUpdate);
     };
   }, []);
+
+  // Memuat ringkasan reservasi pending via RPC admin_get_bookings
+  const [pendingBookingsCount, setPendingBookingsCount] = useState<number>(0);
+
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      try {
+        const list = await fetchAdminBookings(activeAdminPin, undefined, 'pending');
+        setPendingBookingsCount(list.length);
+      } catch (e) {
+        console.warn('Gagal memuat jumlah pending bookings:', e);
+      }
+    };
+
+    loadPendingCount();
+
+    const handleBookingsUpdate = () => {
+      loadPendingCount();
+    };
+    window.addEventListener('indah_spa_bookings_updated', handleBookingsUpdate);
+    return () => {
+      window.removeEventListener('indah_spa_bookings_updated', handleBookingsUpdate);
+    };
+  }, [activeAdminPin]);
 
   // Prevent background scroll saat drawer aktif
   useEffect(() => {
@@ -237,6 +262,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Calendar className="w-4 h-4" />
               <span>Daftar Reservasi & Jadwal</span>
+              {pendingBookingsCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500 text-white font-bold animate-pulse">
+                  {pendingBookingsCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -544,6 +574,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 >
                   <Calendar className="w-4 h-4 shrink-0" />
                   <span className="flex-1">Daftar Reservasi & Jadwal</span>
+                  {pendingBookingsCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500 text-white font-bold">
+                      {pendingBookingsCount}
+                    </span>
+                  )}
                 </button>
 
                 <button

@@ -210,6 +210,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ adminPin }) => {
               type="password"
               maxLength={6}
               inputMode="numeric"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-lpignore="true"
               required
               placeholder="Masukkan 6 digit PIN saat ini"
               value={oldPin}
@@ -230,6 +235,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ adminPin }) => {
               type="password"
               maxLength={6}
               inputMode="numeric"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-lpignore="true"
               required
               placeholder="Contoh: 889900"
               value={newPin}
@@ -247,6 +257,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ adminPin }) => {
               type="password"
               maxLength={6}
               inputMode="numeric"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-lpignore="true"
               required
               placeholder="Ulangi 6 digit angka PIN baru"
               value={confirmPin}

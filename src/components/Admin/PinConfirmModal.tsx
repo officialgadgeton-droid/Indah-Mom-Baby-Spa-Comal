@@ -159,6 +159,11 @@ export const PinConfirmModal: React.FC<PinConfirmModalProps> = ({
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={6}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-lpignore="true"
                 value={pin}
                 onChange={handlePinChange}
                 disabled={isSubmitting}
@@ -168,7 +173,6 @@ export const PinConfirmModal: React.FC<PinConfirmModalProps> = ({
                     ? 'border-rose-400 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-200'
                     : 'border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20 text-charcoal'
                 }`}
-                autoComplete="off"
               />
             </div>
 

@@ -45,6 +45,8 @@ export interface Booking {
 export type OperationalStatus = 'open' | 'busy_homecare' | 'closed_today';
 
 export interface ClinicOperationalStatus {
+  id?: string;
+  clinic_name?: string;
   status: OperationalStatus;
   note?: string;
   updated_at?: string;

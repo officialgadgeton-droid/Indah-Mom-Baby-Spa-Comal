@@ -237,26 +237,69 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
       }
       setCurrentStep(3);
     } else if (currentStep === 3) {
-      if (!momName.trim()) {
+      const cleanMomName = momName.trim();
+      if (!cleanMomName) {
         warning('Nama Bunda wajib diisi.');
         return;
       }
-      if (!whatsapp.trim() || whatsapp.trim().length < 9) {
-        warning('Nomor WhatsApp aktif wajib diisi (minimal 9 digit).');
+      if (cleanMomName.length < 2) {
+        warning('Nama Bunda minimal 2 karakter.');
         return;
       }
-      if (visitType === 'Homecare - Bidan ke Rumah' && !address.trim()) {
-        warning('Alamat lengkap wajib diisi untuk layanan Homecare.');
+      if (cleanMomName.length > 60) {
+        warning('Nama Bunda maksimal 60 karakter.');
+        return;
+      }
+
+      // Sanitasi dan validasi format nomor WhatsApp (hanya angka 08... / 628...)
+      const cleanWa = whatsapp.trim().replace(/\D/g, '');
+      if (!cleanWa) {
+        warning('Nomor WhatsApp aktif wajib diisi.');
+        return;
+      }
+      if (!/^(08|628)\d{8,12}$/.test(cleanWa)) {
+        warning('Format nomor WhatsApp tidak valid. Masukkan nomor HP aktif diawali 08... atau 628... (10 - 14 digit angka).');
+        return;
+      }
+
+      if (childName.trim().length > 60) {
+        warning('Nama anak maksimal 60 karakter.');
+        return;
+      }
+
+      if (childAge.trim().length > 30) {
+        warning('Usia anak maksimal 30 karakter.');
+        return;
+      }
+
+      if (visitType === 'Homecare - Bidan ke Rumah') {
+        const cleanAddress = address.trim();
+        if (!cleanAddress) {
+          warning('Alamat lengkap rumah wajib diisi untuk layanan Homecare.');
+          return;
+        }
+        if (cleanAddress.length < 5) {
+          warning('Alamat homecare minimal 5 karakter agar Bidan mudah menemukan lokasi.');
+          return;
+        }
+        if (cleanAddress.length > 250) {
+          warning('Alamat homecare maksimal 250 karakter.');
+          return;
+        }
+      }
+
+      if (notes.trim().length > 300) {
+        warning('Catatan khusus/keluhan maksimal 300 karakter.');
         return;
       }
 
       // Save customer data to localStorage
       const profileToSave: SavedCustomerData = {
-        mom_name: momName.trim(),
-        whatsapp_number: whatsapp.trim(),
-        child_name: childName.trim(),
-        child_age: childAge.trim(),
-        address: address.trim(),
+        mom_name: cleanMomName,
+        whatsapp_number: cleanWa,
+        child_name: childName.trim().slice(0, 60),
+        child_age: childAge.trim().slice(0, 30),
+        address: address.trim().slice(0, 250),
       };
       localStorage.setItem('indah_spa_customer_profile', JSON.stringify(profileToSave));
       localStorage.setItem('imb_customer_profile', JSON.stringify(profileToSave));
@@ -279,12 +322,12 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
         service_price: 0,
         booking_date: bookingDate,
         booking_time: selectedTime,
-        mom_name: momName.trim(),
-        whatsapp_number: whatsapp.trim(),
-        child_name: childName.trim() || undefined,
-        child_age: childAge.trim() || undefined,
-        address: address.trim() || undefined,
-        notes: notes.trim() || undefined,
+        mom_name: momName.trim().slice(0, 60),
+        whatsapp_number: whatsapp.trim().replace(/\D/g, '').slice(0, 15),
+        child_name: childName.trim().slice(0, 60) || undefined,
+        child_age: childAge.trim().slice(0, 30) || undefined,
+        address: address.trim().slice(0, 250) || undefined,
+        notes: notes.trim().slice(0, 300) || undefined,
         status: 'pending',
       });
 
@@ -722,6 +765,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                       <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type="text"
+                        maxLength={60}
                         placeholder="Contoh: Bunda Rina Setyowati"
                         value={momName}
                         onChange={e => setMomName(e.target.value)}
@@ -738,12 +782,18 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                       <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={15}
                         placeholder="Contoh: 081234567890"
                         value={whatsapp}
-                        onChange={e => setWhatsapp(e.target.value)}
+                        onChange={e => setWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 15))}
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
                       />
                     </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Gunakan format diawali 08... atau 628... (hanya angka).
+                    </p>
                   </div>
                 </div>
 
@@ -756,6 +806,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                       <Baby className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type="text"
+                        maxLength={60}
                         placeholder="Contoh: Baby Alvaro"
                         value={childName}
                         onChange={e => setChildName(e.target.value)}
@@ -770,6 +821,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                     </label>
                     <input
                       type="text"
+                      maxLength={30}
                       placeholder="Contoh: 6 Bulan / 3 Tahun"
                       value={childAge}
                       onChange={e => setChildAge(e.target.value)}
@@ -787,6 +839,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                       <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <textarea
                         rows={2}
+                        maxLength={250}
                         placeholder="Contoh: Jl. Ahmad Yani No. 12, RT 02/RW 03, Comal (Patokan dekat Polsek Comal)"
                         value={address}
                         onChange={e => setAddress(e.target.value)}
@@ -804,6 +857,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                     <FileText className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                     <textarea
                       rows={2}
+                      maxLength={300}
                       placeholder="Contoh: Bayi batuk pilek 2 hari, perut agak kembung / ASI sebelah kanan nyeri"
                       value={notes}
                       onChange={e => setNotes(e.target.value)}

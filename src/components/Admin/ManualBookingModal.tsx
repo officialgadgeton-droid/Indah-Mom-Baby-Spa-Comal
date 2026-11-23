@@ -211,6 +211,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({
               <input
                 type="text"
                 required
+                maxLength={60}
                 placeholder="Nama Bunda"
                 value={momName}
                 onChange={e => setMomName(e.target.value)}
@@ -223,10 +224,13 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({
               </label>
               <input
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={15}
                 required
                 placeholder="08123456789"
                 value={whatsapp}
-                onChange={e => setWhatsapp(e.target.value)}
+                onChange={e => setWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 15))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
               />
             </div>
@@ -240,6 +244,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({
               </label>
               <input
                 type="text"
+                maxLength={60}
                 placeholder="Nama Bayi"
                 value={childName}
                 onChange={e => setChildName(e.target.value)}
@@ -252,6 +257,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({
               </label>
               <input
                 type="text"
+                maxLength={30}
                 placeholder="Misal: 5 Bulan"
                 value={childAge}
                 onChange={e => setChildAge(e.target.value)}
