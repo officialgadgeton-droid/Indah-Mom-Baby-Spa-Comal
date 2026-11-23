@@ -16,6 +16,10 @@ import {
   XCircle,
   Save,
   Clock,
+  Menu,
+  X,
+  Smartphone,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   isSupabaseConfigured,
@@ -31,6 +35,9 @@ import { ServicesTab } from './ServicesTab';
 import { BlockedSlotsTab } from './BlockedSlotsTab';
 import { SettingsTab } from './SettingsTab';
 import { TestimonialsTab } from './TestimonialsTab';
+import { AdminMobileBottomNav } from '../MobileBottomNav';
+import { usePwaInstall } from '../../lib/usePwaInstall';
+import { PwaInstallModal } from '../PwaInstallModal';
 
 interface AdminDashboardProps {
   adminPin: string;
@@ -53,7 +60,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState<AdminTab>('bookings');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const activeAdminPin = (adminPin && adminPin.trim()) || getAdminSessionPin();
+
+  // PWA Install Hook
+  const { isInstallable, isInstalled, isIos, installApp, showGuideModal, setShowGuideModal } =
+    usePwaInstall();
 
   // Sakelar Status Operasional Real-Time
   const [opStatus, setOpStatus] = useState<OperationalStatus>('open');
@@ -86,6 +98,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
   }, []);
 
+  // Prevent background scroll saat drawer aktif
+  useEffect(() => {
+    if (isDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isDrawerOpen]);
+
   const handleSaveOperational = async (targetStatus?: OperationalStatus) => {
     const statusToSave = targetStatus || opStatus;
     setIsSavingOpStatus(true);
@@ -117,15 +141,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handleSelectTab = (tab: AdminTab) => {
+    setActiveTab(tab);
+    setIsDrawerOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-cream flex flex-col">
+    <div className="min-h-screen bg-cream flex flex-col pb-24 md:pb-0">
       {/* Admin Header */}
       <header className="bg-white border-b border-primary/10 sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left: Brand & Admin Tag */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-cream p-1 border border-accent/40 flex items-center justify-center">
+              {/* Mobile Drawer Hamburger Trigger */}
+              <button
+                onClick={() => setIsDrawerOpen(true)}
+                className="md:hidden p-1.5 rounded-lg text-charcoal hover:text-primary hover:bg-primary/5 focus:outline-none shrink-0"
+                aria-label="Buka navigasi admin"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+
+              <div className="w-10 h-10 rounded-full bg-cream p-1 border border-accent/40 flex items-center justify-center shrink-0">
                 <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div>
@@ -134,7 +172,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     Indah Mom & Baby Spa
                   </h1>
                   <span className="text-[10px] font-bold uppercase tracking-wider bg-accent/20 text-accent-dark px-2 py-0.5 rounded-md">
-                    Admin Panel
+                    Admin
                   </span>
                 </div>
                 <p className="text-[11px] text-charcoal-light hidden sm:block mt-0.5">
@@ -146,7 +184,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* Right: Quick actions (View Site & Logout) */}
             <div className="flex items-center gap-2 sm:gap-3">
               <div
-                className={`hidden md:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${
+                className={`hidden lg:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${
                   isSupabaseConfigured
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     : 'bg-amber-50 text-amber-800 border-amber-200'
@@ -163,11 +201,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               <button
                 onClick={onBackToHome}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-charcoal text-xs font-semibold"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-charcoal text-xs font-semibold"
                 title="Buka Landing Page"
               >
                 <Home className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Lihat Web</span>
+                <span>Lihat Web</span>
               </button>
 
               <button
@@ -181,8 +219,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex space-x-1 sm:space-x-4 border-t border-slate-100 overflow-x-auto no-scrollbar">
+          {/* Desktop Navigation Tabs */}
+          <div className="hidden md:flex space-x-1 sm:space-x-4 border-t border-slate-100 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab('bookings')}
               className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-bold border-b-2 whitespace-nowrap transition-all ${
@@ -258,75 +296,74 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </header>
 
-      {/* Sakelar Cepat Status Operasional Real-Time */}
-      <div className="bg-gradient-to-r from-white via-cream/50 to-white border-b border-primary/10 shadow-xs">
+      {/* Control Banner Status Operasional Real-Time */}
+      <div className="bg-white border-b border-slate-200 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            {/* Status Current Label & Indicator */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="relative flex h-3 w-3">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    opStatus === 'open'
-                      ? 'bg-emerald-400'
-                      : opStatus === 'busy_homecare'
-                      ? 'bg-amber-400'
-                      : 'bg-rose-400'
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex rounded-full h-3 w-3 ${
-                    opStatus === 'open'
-                      ? 'bg-emerald-500'
-                      : opStatus === 'busy_homecare'
-                      ? 'bg-amber-500'
-                      : 'bg-rose-500'
-                  }`}
-                />
-              </span>
+              <div
+                className={`p-2 rounded-xl text-white shadow-xs shrink-0 ${
+                  opStatus === 'open'
+                    ? 'bg-emerald-600'
+                    : opStatus === 'busy_homecare'
+                    ? 'bg-amber-600 animate-pulse'
+                    : 'bg-rose-600'
+                }`}
+              >
+                <Activity className="w-4 h-4" />
+              </div>
               <div>
-                <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-accent" />
-                  Status Operasional Real-Time:
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-charcoal uppercase tracking-wider">
+                    Status Operasional Hari Ini:
+                  </span>
                   <span
-                    className={`ml-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${
                       opStatus === 'open'
-                        ? 'bg-emerald-100 text-emerald-800'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                         : opStatus === 'busy_homecare'
-                        ? 'bg-amber-100 text-amber-900'
-                        : 'bg-rose-100 text-rose-800'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-rose-50 text-rose-800 border-rose-200'
                     }`}
                   >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        opStatus === 'open'
+                          ? 'bg-emerald-500'
+                          : opStatus === 'busy_homecare'
+                          ? 'bg-amber-500 animate-ping'
+                          : 'bg-rose-500'
+                      }`}
+                    />
                     {opStatus === 'open'
                       ? 'Buka Normal'
                       : opStatus === 'busy_homecare'
                       ? 'Sedang Homecare / Persalinan'
                       : 'Tutup Praktik Hari Ini'}
                   </span>
-                </span>
-                {opNote && (
-                  <p className="text-[11px] text-charcoal-light truncate max-w-md mt-0.5">
-                    Catatan Publik: <span className="italic font-medium">"{opNote}"</span>
-                  </p>
-                )}
+                </div>
+                <p className="text-[11px] text-charcoal-light mt-0.5">
+                  {opNote ||
+                    (opStatus === 'open'
+                      ? 'Klinik beroperasi normal sesuai jadwal reservasi.'
+                      : opStatus === 'busy_homecare'
+                      ? 'Bidan sedang bertugas di luar/persalinan, reservasi online tetap berjalan.'
+                      : 'Klinik hari ini tidak menerima kunjungan tatap muka.')}
+                </p>
               </div>
             </div>
 
-            {/* Quick 3 Status Buttons */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {/* Quick Action Pill Buttons */}
+            <div className="flex items-center flex-wrap gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={() => {
-                  setOpStatus('open');
-                  handleSaveOperational('open');
-                }}
                 disabled={isSavingOpStatus}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                onClick={() => handleSaveOperational('open')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                   opStatus === 'open'
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                    : 'bg-white hover:bg-emerald-50 text-emerald-800 border-emerald-200'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
                 }`}
-                title="Atur status operasional klinik: Buka Normal"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span>Buka Normal</span>
@@ -334,35 +371,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               <button
                 type="button"
-                onClick={() => {
-                  setOpStatus('busy_homecare');
-                  handleSaveOperational('busy_homecare');
-                }}
                 disabled={isSavingOpStatus}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                onClick={() => handleSaveOperational('busy_homecare')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                   opStatus === 'busy_homecare'
-                    ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
-                    : 'bg-white hover:bg-amber-50 text-amber-900 border-amber-300'
+                    ? 'bg-amber-700 text-white shadow-xs'
+                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
                 }`}
-                title="Atur status operasional: Sedang Homecare / Membantu Persalinan"
               >
                 <Clock className="w-3.5 h-3.5" />
-                <span>Sedang Homecare / Persalinan</span>
+                <span>Sedang Homecare</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => {
-                  setOpStatus('closed_today');
-                  handleSaveOperational('closed_today');
-                }}
                 disabled={isSavingOpStatus}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                onClick={() => handleSaveOperational('closed_today')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                   opStatus === 'closed_today'
-                    ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                    : 'bg-white hover:bg-rose-50 text-rose-800 border-rose-200'
+                    ? 'bg-rose-700 text-white shadow-xs'
+                    : 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200'
                 }`}
-                title="Atur status operasional: Tutup Praktik Hari Ini"
               >
                 <XCircle className="w-3.5 h-3.5" />
                 <span>Tutup Hari Ini</span>
@@ -371,10 +400,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setIsOpExpanded(!isOpExpanded)}
-                className="px-2.5 py-1.5 text-xs text-primary/80 hover:text-primary font-semibold hover:bg-primary/5 rounded-lg border border-primary/20 transition-colors"
-                title="Tulis catatan operasional untuk Bunda di website"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-300 text-charcoal hover:bg-slate-100 text-xs font-semibold"
+                title="Tambahkan catatan khusus ke website publik"
               >
-                {isOpExpanded ? 'Tutup Catatan' : '+ Catatan Publik'}
+                {isOpExpanded ? 'Tutup Catatan' : 'Ubah Catatan'}
               </button>
             </div>
           </div>
@@ -412,6 +441,230 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {activeTab === 'blocked' && <BlockedSlotsTab adminPin={activeAdminPin} />}
         {activeTab === 'settings' && <SettingsTab adminPin={activeAdminPin} />}
       </main>
+
+      {/* ========================================================= */}
+      {/* MOBILE LEFT SIDEBAR DRAWER ADMIN (Slide-over Khusus Mobile) */}
+      {/* ========================================================= */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop Gelap Transparan */}
+          <div
+            className="fixed inset-0 bg-charcoal/60 backdrop-blur-xs transition-opacity duration-300 animate-fade-in"
+            onClick={() => setIsDrawerOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Drawer Panel Container */}
+          <div className="fixed inset-y-0 left-0 w-[85%] max-w-xs bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out border-r border-purple-100 pb-[env(safe-area-inset-bottom)]">
+            {/* Header Drawer */}
+            <div className="p-4 bg-gradient-to-b from-primary/5 via-cream to-white border-b border-purple-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-white p-0.5 shadow-sm border border-accent/40 shrink-0 flex items-center justify-center">
+                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="font-serif font-bold text-sm text-primary tracking-tight truncate">
+                      Indah Mom & Baby Spa
+                    </h2>
+                    <span className="text-[9px] uppercase font-bold tracking-wider bg-accent/20 text-accent-dark px-1 py-0.5 rounded shrink-0">
+                      Admin
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-charcoal-light truncate font-medium">
+                    Panel Kontrol Bidan Indah Comal
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="p-1.5 rounded-lg text-charcoal-light hover:text-charcoal hover:bg-slate-100 transition-colors"
+                aria-label="Tutup menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Tab Menu List */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              {/* Database Status Indicator */}
+              <div
+                className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
+                  isSupabaseConfigured
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}
+              >
+                <Database className="w-4 h-4 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-[11px] leading-tight">
+                    {isSupabaseConfigured ? 'Supabase Connected' : 'Local Storage Mode'}
+                  </p>
+                  <p className="text-[10px] opacity-80 mt-0.5 truncate">
+                    {isSupabaseConfigured
+                      ? 'Tersinkronisasi Cloud DB'
+                      : 'Data tersimpan di browser'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-charcoal-light/70 px-2 pt-1 pb-1">
+                  Navigasi Panel Admin
+                </p>
+
+                <button
+                  onClick={() => handleSelectTab('bookings')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-colors ${
+                    activeTab === 'bookings'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-charcoal hover:bg-primary/5 hover:text-primary'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">Daftar Reservasi & Jadwal</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectTab('customers')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-colors ${
+                    activeTab === 'customers'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-charcoal hover:bg-primary/5 hover:text-primary'
+                  }`}
+                >
+                  <Users className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">Data Pelanggan</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectTab('services')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-colors ${
+                    activeTab === 'services'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-charcoal hover:bg-primary/5 hover:text-primary'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">Kelola Layanan & Harga</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectTab('testimonials')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-colors ${
+                    activeTab === 'testimonials'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-charcoal hover:bg-primary/5 hover:text-primary'
+                  }`}
+                >
+                  <MessageSquareHeart className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">Testimoni WA</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectTab('blocked')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-colors ${
+                    activeTab === 'blocked'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-charcoal hover:bg-primary/5 hover:text-primary'
+                  }`}
+                >
+                  <CalendarOff className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">Tutup Jadwal / Libur</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectTab('settings')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-colors ${
+                    activeTab === 'settings'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-charcoal hover:bg-primary/5 hover:text-primary'
+                  }`}
+                >
+                  <Settings className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">Pengaturan Klinik</span>
+                </button>
+              </div>
+
+              {/* Action Buttons in Drawer */}
+              <div className="pt-2 space-y-2 border-t border-slate-100">
+                {/* 1. Lihat Web Publik */}
+                <button
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                    onBackToHome();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-charcoal font-semibold text-xs transition-colors"
+                >
+                  <Home className="w-4 h-4 text-charcoal-light" />
+                  <span>Buka Website Publik</span>
+                </button>
+
+                {/* 2. Install Aplikasi Admin PWA */}
+                <button
+                  onClick={() => {
+                    if (isInstalled) return;
+                    installApp();
+                  }}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-xs font-bold transition-all ${
+                    isInstalled
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 cursor-default'
+                      : 'bg-primary/5 hover:bg-primary/10 text-primary border-primary/20 shadow-xs'
+                  }`}
+                >
+                  {isInstalled ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Admin PWA Terpasang ✓</span>
+                    </>
+                  ) : (
+                    <>
+                      <Smartphone className="w-4 h-4 text-primary" />
+                      <span>Install Aplikasi Admin ke HP</span>
+                    </>
+                  )}
+                </button>
+
+                {/* 3. Keluar / Logout */}
+                <button
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors"
+                >
+                  <LogOut className="w-4 h-4 text-rose-600" />
+                  <span>Keluar dari Panel Admin</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Footer Drawer */}
+            <div className="p-3 bg-slate-50 border-t border-slate-100 text-center text-[10px] text-charcoal-light">
+              <p className="font-semibold text-primary">Indah Mom & Baby Spa Comal</p>
+              <p className="text-slate-400 mt-0.5">Admin Fullscreen PWA Portal</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Mobile Bottom Navigation Bar (Khusus Layar Mobile) */}
+      <AdminMobileBottomNav
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
+        onOpenMoreMenu={() => setIsDrawerOpen(true)}
+      />
+
+      {/* Modal Panduan PWA Install */}
+      <PwaInstallModal
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+        isIos={isIos}
+        onDirectInstall={installApp}
+        hasDirectPrompt={isInstallable}
+      />
     </div>
   );
 };

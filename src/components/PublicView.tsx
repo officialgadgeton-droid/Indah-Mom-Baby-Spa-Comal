@@ -15,6 +15,7 @@ import { BookingWizard } from './BookingWizard';
 import { TestimonialsSection } from './TestimonialsSection';
 import { LocationSection } from './LocationSection';
 import { Footer } from './Footer';
+import { PublicMobileBottomNav } from './MobileBottomNav';
 
 interface PublicViewProps {
   onNavigateToAdmin?: () => void;
@@ -28,16 +29,17 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
     status: 'open',
     note: '',
   });
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     const loadServices = () => {
-      fetchActiveServices().then(data => {
+      fetchActiveServices().then((data) => {
         if (data && data.length > 0) setServices(data);
       });
     };
 
     const loadOpStatus = () => {
-      fetchClinicOperationalStatus().then(data => {
+      fetchClinicOperationalStatus().then((data) => {
         if (data) setOperationalStatus(data);
       });
     };
@@ -111,8 +113,10 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-charcoal">
+    <div className="min-h-screen flex flex-col bg-cream text-charcoal pb-24 md:pb-0">
       <Navbar
+        isDrawerOpen={isDrawerOpen}
+        setIsDrawerOpen={setIsDrawerOpen}
         onSelectBooking={() => {
           const el = document.getElementById('reservasi');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -163,6 +167,15 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
         whatsappNumber={settings.whatsapp_number}
         operatingHours={settings.operating_hours}
         instagramHandle={settings.clinic_instagram}
+      />
+
+      {/* Mobile Bottom Navigation Bar (Khusus Layar Mobile) */}
+      <PublicMobileBottomNav
+        onOpenDrawer={() => setIsDrawerOpen(true)}
+        onSelectBooking={() => {
+          const el = document.getElementById('reservasi');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
     </div>
   );

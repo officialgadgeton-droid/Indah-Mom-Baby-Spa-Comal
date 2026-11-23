@@ -120,6 +120,32 @@
   animation: bounceIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+@keyframes slideRight {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+.animate-slide-right {
+  animation: slideRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Infinite Horizontal Marquee for WhatsApp Testimonial Cards */
 @keyframes marqueeScroll {
   0% {
