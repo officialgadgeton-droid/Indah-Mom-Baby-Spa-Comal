@@ -35,6 +35,8 @@ import { ServicesTab } from './ServicesTab';
 import { BlockedSlotsTab } from './BlockedSlotsTab';
 import { SettingsTab } from './SettingsTab';
 import { TestimonialsTab } from './TestimonialsTab';
+import { TikTokTab } from './TikTokTab';
+import { TikTokIcon } from '../TikTokSection';
 import { AdminMobileBottomNav } from '../MobileBottomNav';
 import { usePwaInstall } from '../../lib/usePwaInstall';
 import { PwaInstallModal } from '../PwaInstallModal';
@@ -50,6 +52,7 @@ export type AdminTab =
   | 'customers'
   | 'services'
   | 'testimonials'
+  | 'tiktok'
   | 'blocked'
   | 'settings';
 
@@ -270,6 +273,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('tiktok')}
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-bold border-b-2 whitespace-nowrap transition-all ${
+                activeTab === 'tiktok'
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-transparent text-charcoal-light hover:text-primary hover:border-slate-300'
+              }`}
+            >
+              <TikTokIcon className="w-4 h-4 text-[#FE2C55]" />
+              <span>Video TikTok</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('blocked')}
               className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-bold border-b-2 whitespace-nowrap transition-all ${
                 activeTab === 'blocked'
@@ -438,6 +453,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {activeTab === 'customers' && <CustomersTab adminPin={activeAdminPin} />}
         {activeTab === 'services' && <ServicesTab adminPin={activeAdminPin} />}
         {activeTab === 'testimonials' && <TestimonialsTab adminPin={activeAdminPin} />}
+        {activeTab === 'tiktok' && <TikTokTab adminPin={activeAdminPin} />}
         {activeTab === 'blocked' && <BlockedSlotsTab adminPin={activeAdminPin} />}
         {activeTab === 'settings' && <SettingsTab adminPin={activeAdminPin} />}
       </main>
@@ -561,6 +577,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 >
                   <MessageSquareHeart className="w-4 h-4 shrink-0" />
                   <span className="flex-1">Testimoni WA</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectTab('tiktok')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-colors ${
+                    activeTab === 'tiktok'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-charcoal hover:bg-primary/5 hover:text-primary'
+                  }`}
+                >
+                  <TikTokIcon className="w-4 h-4 text-[#FE2C55] shrink-0" />
+                  <span className="flex-1">Video TikTok</span>
                 </button>
 
                 <button

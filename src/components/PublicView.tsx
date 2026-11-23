@@ -13,6 +13,7 @@ import { AboutSection } from './AboutSection';
 import { HowToBookSection } from './HowToBookSection';
 import { BookingWizard } from './BookingWizard';
 import { TestimonialsSection } from './TestimonialsSection';
+import { TikTokSection } from './TikTokSection';
 import { LocationSection } from './LocationSection';
 import { Footer } from './Footer';
 import { PublicMobileBottomNav } from './MobileBottomNav';
@@ -153,6 +154,8 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
         />
 
         <TestimonialsSection />
+
+        <TikTokSection />
 
         <LocationSection
           clinicAddress={settings.clinic_address}

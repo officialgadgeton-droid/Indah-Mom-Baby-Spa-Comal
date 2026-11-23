@@ -17,12 +17,24 @@ const InstagramIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4"
   </svg>
 );
 
+const TikTokIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" />
+  </svg>
+);
+
 interface FooterProps {
   onNavigateToAdmin?: () => void;
   clinicAddress?: string;
   whatsappNumber?: string;
   operatingHours?: string;
   instagramHandle?: string;
+  tiktokHandle?: string;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -31,6 +43,7 @@ export const Footer: React.FC<FooterProps> = ({
   whatsappNumber = '0878-5696-0422',
   operatingHours = 'Buka setiap hari hingga pukul 18.00 WIB',
   instagramHandle = '@indahmombabyspa_comal',
+  tiktokHandle = '@indah_mom.baby_spa_comal',
 }) => {
   const cleanDigits = whatsappNumber.replace(/[^0-9]/g, '');
   const waLink = cleanDigits.startsWith('0') ? '62' + cleanDigits.slice(1) : cleanDigits;
@@ -82,6 +95,15 @@ export const Footer: React.FC<FooterProps> = ({
                 title="Instagram"
               >
                 <InstagramIcon className="w-4 h-4" />
+              </a>
+              <a
+                href={`https://www.tiktok.com/${tiktokHandle.startsWith('@') ? tiktokHandle : '@' + tiktokHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#FE2C55] text-white flex items-center justify-center transition-colors"
+                title={`TikTok ${tiktokHandle}`}
+              >
+                <TikTokIcon className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -148,6 +170,17 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="flex items-center gap-2.5">
                 <InstagramIcon className="w-4 h-4 text-accent shrink-0" />
                 <span>Instagram: {instagramHandle}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <TikTokIcon className="w-4 h-4 text-accent shrink-0" />
+                <a
+                  href={`https://www.tiktok.com/${tiktokHandle.startsWith('@') ? tiktokHandle : '@' + tiktokHandle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-accent transition-colors"
+                >
+                  <span>TikTok: {tiktokHandle}</span>
+                </a>
               </div>
               <div className="mt-3 p-3 rounded-xl bg-white/5 border border-white/10 text-[11px]">
                 <strong className="text-white block font-semibold mb-0.5">Jam Operasional:</strong>

@@ -19,6 +19,7 @@ import {
 import { ClinicOperationalStatus } from '../types';
 import { usePwaInstall } from '../lib/usePwaInstall';
 import { PwaInstallModal } from './PwaInstallModal';
+import { TikTokIcon } from './TikTokSection';
 
 interface NavbarProps {
   onNavigateToAdmin?: () => void;
@@ -239,6 +240,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Ulasan
                 </button>
                 <button
+                  onClick={() => handleScrollTo('tiktok')}
+                  className="text-sm font-semibold text-charcoal hover:text-primary transition-colors whitespace-nowrap"
+                >
+                  TikTok
+                </button>
+                <button
                   onClick={() => handleScrollTo('lokasi')}
                   className="text-sm font-semibold text-charcoal hover:text-primary transition-colors whitespace-nowrap"
                 >
@@ -404,6 +411,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
 
                 <button
+                  onClick={() => handleScrollTo('tiktok')}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold text-charcoal hover:bg-primary/5 hover:text-primary active:bg-primary/10 transition-colors"
+                >
+                  <TikTokIcon className="w-4 h-4 text-accent-dark shrink-0" />
+                  <span className="flex-1">Galeri Video TikTok</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#FE2C55]/10 text-[#FE2C55]">
+                    10,9k+
+                  </span>
+                </button>
+
+                <button
                   onClick={() => handleScrollTo('lokasi')}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold text-charcoal hover:bg-primary/5 hover:text-primary active:bg-primary/10 transition-colors"
                 >
@@ -437,6 +455,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>Chat WhatsApp Bidan</span>
+                </a>
+
+                {/* 3. Tautan Profil TikTok Resmi */}
+                <a
+                  href="https://www.tiktok.com/@indah_mom.baby_spa_comal"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#121212] hover:bg-black text-white font-bold text-xs shadow-xs transition-colors border border-white/10"
+                >
+                  <TikTokIcon className="w-4 h-4 text-[#FE2C55]" />
+                  <span>TikTok @indah_mom.baby_spa_comal</span>
                 </a>
 
                 {/* 3. Tombol Install PWA ke HP */}

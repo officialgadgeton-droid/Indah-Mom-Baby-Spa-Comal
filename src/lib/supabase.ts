@@ -5,11 +5,13 @@ import {
   BlockedSlot,
   AppSettings,
   Testimonial,
+  TikTokVideo,
   OperationalStatus,
   ClinicOperationalStatus,
 } from '../types';
 import { INITIAL_SERVICES, DEFAULT_SETTINGS } from '../data/initialServices';
 import { INITIAL_TESTIMONIALS } from '../data/initialTestimonials';
+import { INITIAL_TIKTOK_VIDEOS } from '../data/initialTikTokVideos';
 
 // Cek konfigurasi Supabase dari environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -36,6 +38,7 @@ const STORAGE_KEYS = {
   SETTINGS: 'imb_settings',
   CUSTOMER_DATA: 'indah_spa_customer_profile',
   TESTIMONIALS: 'indah_spa_testimonials',
+  TIKTOK_VIDEOS: 'indah_spa_tiktok_videos',
   OPERATIONAL_STATUS: 'indah_spa_operational_status',
 };
 
@@ -184,6 +187,23 @@ export function getLocalTestimonials(): Testimonial[] {
     return [];
   } catch {
     return [];
+  }
+}
+
+export function getLocalTikTokVideos(): TikTokVideo[] {
+  const data = localStorage.getItem(STORAGE_KEYS.TIKTOK_VIDEOS);
+  if (!data) {
+    localStorage.setItem(STORAGE_KEYS.TIKTOK_VIDEOS, JSON.stringify(INITIAL_TIKTOK_VIDEOS));
+    return INITIAL_TIKTOK_VIDEOS;
+  }
+  try {
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return INITIAL_TIKTOK_VIDEOS;
+  } catch {
+    return INITIAL_TIKTOK_VIDEOS;
   }
 }
 
@@ -1466,4 +1486,279 @@ export async function deleteTestimonial(pin: string, id: string): Promise<boolea
   localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(filtered));
   return true;
 }
+
+// ==========================================
+// TIKTOK VIDEOS MANAGEMENT
+// ==========================================
+
+/**
+ * Mengekstrak angka ID video dari URL TikTok atau langsung menerima angka ID.
+ * Contoh URL:
+ * - https://www.tiktok.com/@indah_mom.baby_spa_comal/video/7438291029384712345
+ * - https://m.tiktok.com/v/7438291029384712345.html
+ * - https://www.tiktok.com/embed/v2/7438291029384712345
+ */
+export function extractTikTokVideoId(urlOrId: string): string | null {
+  if (!urlOrId) return null;
+  const trimmed = urlOrId.trim();
+
+  // Jika user langsung memasukkan digit angka video ID
+  if (/^\d{15,25}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Regex pola URL video TikTok standar
+  const match =
+    trimmed.match(/\/video\/(\d+)/i) ||
+    trimmed.match(/\/v\/(\d+)/i) ||
+    trimmed.match(/embed\/v2\/(\d+)/i) ||
+    trimmed.match(/modal_id=(\d+)/i);
+
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return null;
+}
+
+/**
+ * Mendeteksi apakah URL merupakan tautan pendek TikTok (vt.tiktok.com / vm.tiktok.com)
+ */
+export function isTikTokShortLink(url: string): boolean {
+  if (!url) return false;
+  return /vt\.tiktok\.com|vm\.tiktok\.com/i.test(url.trim());
+}
+
+/**
+ * Mengambil daftar video TikTok yang berstatus aktif untuk halaman depan (publik)
+ */
+export async function fetchActiveTikTokVideos(): Promise<TikTokVideo[]> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('tiktok_videos')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Gagal fetch active TikTok videos dari Supabase:', error);
+      } else if (data) {
+        return data as TikTokVideo[];
+      }
+    } catch (e) {
+      console.warn('Gagal fetch active TikTok videos dari Supabase, fallback ke lokal:', e);
+    }
+  }
+
+  return getLocalTikTokVideos().filter((v) => v.is_active);
+}
+
+/**
+ * Mengambil seluruh daftar video TikTok untuk Dashboard Admin
+ */
+export async function fetchAdminTikTokVideos(): Promise<TikTokVideo[]> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('tiktok_videos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Gagal fetch all TikTok videos dari Supabase:', error);
+        throw new Error(error.message || 'Gagal memuat daftar video TikTok dari server.');
+      } else if (data) {
+        return data as TikTokVideo[];
+      }
+    } catch (e: any) {
+      console.warn('Gagal fetch all TikTok videos dari Supabase:', e);
+      if (isSupabaseConfigured) {
+        throw e;
+      }
+    }
+  }
+
+  return getLocalTikTokVideos();
+}
+
+/**
+ * Memanggil fungsi RPC PostgreSQL `admin_manage_tiktok` di Supabase
+ */
+export async function adminManageTikTok(
+  pin: string,
+  action: 'create' | 'update' | 'toggle_active' | 'delete',
+  payload?: {
+    id?: string;
+    title?: string;
+    tiktok_url?: string;
+    video_id?: string;
+    is_active?: boolean;
+  }
+): Promise<string> {
+  const effectivePin = pin || getAdminSessionPin();
+  if (!effectivePin) {
+    throw new Error('PIN sesi admin tidak ditemukan. Silakan verifikasi PIN Anda kembali.');
+  }
+
+  if (!supabase) {
+    throw new Error('Koneksi Supabase tidak aktif. Berjalan dalam mode LocalStorage.');
+  }
+
+  const { data, error } = await supabase.rpc('admin_manage_tiktok', {
+    pin_input: effectivePin,
+    p_action: action,
+    p_id: payload?.id || null,
+    p_title: payload?.title || null,
+    p_tiktok_url: payload?.tiktok_url || null,
+    p_video_id: payload?.video_id || null,
+    p_is_active: payload?.is_active ?? true,
+  });
+
+  if (error) {
+    console.error(`RPC admin_manage_tiktok (${action}) error:`, error);
+    throw new Error(error.message || `Gagal menjalankan aksi ${action} pada video TikTok.`);
+  }
+
+  return data as string;
+}
+
+/**
+ * Menyimpan atau memperbarui video TikTok (Dual-Mode: Supabase RPC + LocalStorage Fallback)
+ */
+export async function saveTikTokVideo(
+  pin: string,
+  video: {
+    id?: string;
+    title: string;
+    tiktok_url: string;
+    video_id: string;
+    is_active?: boolean;
+  }
+): Promise<TikTokVideo> {
+  const effectivePin = pin || getAdminSessionPin();
+  const isUpdate = Boolean(video.id && !video.id.startsWith('tiktok-sample-') && !video.id.startsWith('tiktok-local-'));
+
+  if (supabase) {
+    try {
+      const resId = await adminManageTikTok(effectivePin, isUpdate ? 'update' : 'create', {
+        id: isUpdate ? video.id : undefined,
+        title: video.title.trim(),
+        tiktok_url: video.tiktok_url.trim(),
+        video_id: video.video_id.trim(),
+        is_active: video.is_active ?? true,
+      });
+
+      const savedItem: TikTokVideo = {
+        id: resId || video.id || `tiktok-saved-${Date.now()}`,
+        title: video.title.trim(),
+        tiktok_url: video.tiktok_url.trim(),
+        video_id: video.video_id.trim(),
+        is_active: video.is_active ?? true,
+        created_at: new Date().toISOString(),
+      };
+
+      // Sinkronkan juga ke local storage sebagai cache
+      const list = getLocalTikTokVideos();
+      const existingIdx = list.findIndex((v) => v.id === savedItem.id);
+      if (existingIdx !== -1) {
+        list[existingIdx] = savedItem;
+      } else {
+        list.unshift(savedItem);
+      }
+      localStorage.setItem(STORAGE_KEYS.TIKTOK_VIDEOS, JSON.stringify(list));
+      window.dispatchEvent(new CustomEvent('indah_spa_tiktok_videos_updated'));
+
+      return savedItem;
+    } catch (e) {
+      if (isSupabaseConfigured) throw e;
+      console.warn('Fallback save TikTok video ke LocalStorage:', e);
+    }
+  }
+
+  // Fallback Local Storage
+  const list = getLocalTikTokVideos();
+  if (video.id) {
+    const idx = list.findIndex((v) => v.id === video.id);
+    if (idx !== -1) {
+      list[idx] = {
+        ...list[idx],
+        ...video,
+        is_active: video.is_active ?? list[idx].is_active,
+      };
+      localStorage.setItem(STORAGE_KEYS.TIKTOK_VIDEOS, JSON.stringify(list));
+      window.dispatchEvent(new CustomEvent('indah_spa_tiktok_videos_updated'));
+      return list[idx];
+    }
+  }
+
+  const newVideo: TikTokVideo = {
+    id: `tiktok-local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    title: video.title.trim(),
+    tiktok_url: video.tiktok_url.trim(),
+    video_id: video.video_id.trim(),
+    is_active: video.is_active ?? true,
+    created_at: new Date().toISOString(),
+  };
+
+  list.unshift(newVideo);
+  localStorage.setItem(STORAGE_KEYS.TIKTOK_VIDEOS, JSON.stringify(list));
+  window.dispatchEvent(new CustomEvent('indah_spa_tiktok_videos_updated'));
+  return newVideo;
+}
+
+/**
+ * Mengubah status aktif / sembunyikan video TikTok
+ */
+export async function toggleTikTokVideoStatus(pin: string, id: string): Promise<boolean> {
+  const effectivePin = pin || getAdminSessionPin();
+
+  if (supabase) {
+    const isLocalId = id.startsWith('tiktok-sample-') || id.startsWith('tiktok-local-');
+    if (!isLocalId) {
+      try {
+        await adminManageTikTok(effectivePin, 'toggle_active', { id });
+      } catch (e) {
+        if (isSupabaseConfigured) throw e;
+        console.warn('Fallback toggle TikTok video status ke LocalStorage:', e);
+      }
+    }
+  }
+
+  const list = getLocalTikTokVideos();
+  const idx = list.findIndex((v) => v.id === id);
+  if (idx !== -1) {
+    list[idx].is_active = !list[idx].is_active;
+    localStorage.setItem(STORAGE_KEYS.TIKTOK_VIDEOS, JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('indah_spa_tiktok_videos_updated'));
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Menghapus video TikTok
+ */
+export async function deleteTikTokVideo(pin: string, id: string): Promise<boolean> {
+  const effectivePin = pin || getAdminSessionPin();
+
+  if (supabase) {
+    const isLocalId = id.startsWith('tiktok-sample-') || id.startsWith('tiktok-local-');
+    if (!isLocalId) {
+      try {
+        await adminManageTikTok(effectivePin, 'delete', { id });
+      } catch (e) {
+        if (isSupabaseConfigured) throw e;
+        console.warn('Fallback delete TikTok video ke LocalStorage:', e);
+      }
+    }
+  }
+
+  const list = getLocalTikTokVideos();
+  const filtered = list.filter((v) => v.id !== id);
+  localStorage.setItem(STORAGE_KEYS.TIKTOK_VIDEOS, JSON.stringify(filtered));
+  window.dispatchEvent(new CustomEvent('indah_spa_tiktok_videos_updated'));
+  return true;
+}
+
 

@@ -65,6 +65,7 @@ export interface AppSettings {
   admin_pin: string;
   operating_hours: string;
   clinic_instagram: string;
+  clinic_tiktok?: string;
 }
 
 export interface SavedCustomerData {
@@ -79,6 +80,15 @@ export interface Testimonial {
   id: string;
   image_url: string;
   caption?: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface TikTokVideo {
+  id: string;
+  title: string;
+  tiktok_url: string;
+  video_id: string;
   is_active: boolean;
   created_at?: string;
 }
