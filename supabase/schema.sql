@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.bookings (
     service_name VARCHAR(150) NOT NULL,
     service_price NUMERIC(12,2) DEFAULT 0,
     booking_date DATE NOT NULL,
-    booking_time VARCHAR(20) NOT NULL,
+    booking_time VARCHAR(100) NOT NULL,
     mom_name VARCHAR(150) NOT NULL,
     whatsapp_number VARCHAR(50) NOT NULL,
     child_name VARCHAR(150),
@@ -40,6 +40,9 @@ CREATE TABLE IF NOT EXISTS public.bookings (
     status VARCHAR(30) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+-- Pastikan kolom booking_time dapat menampung nama sesi & jam final fleksibel (hingga 100 karakter)
+ALTER TABLE public.bookings ALTER COLUMN booking_time TYPE VARCHAR(100);
 
 CREATE INDEX IF NOT EXISTS idx_bookings_date ON public.bookings(booking_date);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON public.bookings(status);
@@ -365,11 +368,13 @@ BEGIN
 END;
 $$;
 
--- 4. update_booking_status: Mengubah status reservasi (confirmed, completed, cancelled)
+-- 4. update_booking_status: Mengubah status reservasi (confirmed, completed, cancelled) serta opsi penyesuaian jam final
+DROP FUNCTION IF EXISTS public.update_booking_status(text, uuid, text);
 CREATE OR REPLACE FUNCTION public.update_booking_status(
     pin_input text,
     p_booking_id uuid,
-    p_status text
+    p_status text,
+    p_booking_time text DEFAULT NULL
 )
 RETURNS boolean
 LANGUAGE plpgsql
@@ -381,7 +386,8 @@ BEGIN
     END IF;
 
     UPDATE public.bookings
-    SET status = p_status
+    SET status = p_status,
+        booking_time = COALESCE(NULLIF(p_booking_time, ''), booking_time)
     WHERE id = p_booking_id;
 
     RETURN FOUND;
@@ -600,6 +606,62 @@ BEGIN
 END;
 $$;
 
+-- 10. admin_delete_booking: Hapus satu data reservasi permanen dengan verifikasi PIN Admin
+CREATE OR REPLACE FUNCTION public.admin_delete_booking(
+    pin_input text,
+    p_booking_id uuid
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF NOT public.verify_admin_pin(pin_input) THEN
+        RAISE EXCEPTION 'Akses ditolak: PIN Admin tidak valid!';
+    END IF;
+
+    DELETE FROM public.bookings
+    WHERE id = p_booking_id;
+
+    RETURN FOUND;
+END;
+$$;
+
+-- 11. admin_delete_customer_bookings: Hapus seluruh riwayat reservasi pelanggan berdasarkan nomor WA dengan verifikasi PIN Admin
+CREATE OR REPLACE FUNCTION public.admin_delete_customer_bookings(
+    pin_input text,
+    p_whatsapp_number text
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    deleted_count integer;
+    clean_target text;
+BEGIN
+    IF NOT public.verify_admin_pin(pin_input) THEN
+        RAISE EXCEPTION 'Akses ditolak: PIN Admin tidak valid!';
+    END IF;
+
+    -- Normalisasi nomor WhatsApp target untuk pencocokan fleksibel
+    clean_target := regexp_replace(p_whatsapp_number, '[^0-9]', '', 'g');
+    IF clean_target LIKE '0%' THEN
+        clean_target := '62' || substr(clean_target, 2);
+    ELSIF clean_target LIKE '8%' THEN
+        clean_target := '62' || clean_target;
+    END IF;
+
+    DELETE FROM public.bookings
+    WHERE whatsapp_number = p_whatsapp_number
+       OR regexp_replace(whatsapp_number, '[^0-9]', '', 'g') = clean_target
+       OR ('62' || ltrim(regexp_replace(whatsapp_number, '[^0-9]', '', 'g'), '0')) = clean_target;
+
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    RETURN deleted_count;
+END;
+$$;
+
 -- Berikan hak akses eksekusi RPC ke anon & authenticated
 GRANT EXECUTE ON FUNCTION public.get_booked_slots(date) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.verify_admin_pin(text) TO anon, authenticated;
@@ -610,6 +672,8 @@ GRANT EXECUTE ON FUNCTION public.admin_manage_service(text, text, uuid, text, te
 GRANT EXECUTE ON FUNCTION public.admin_manage_blocked_slot(text, text, uuid, date, text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_update_setting(text, text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_manage_testimonial(text, text, uuid, text, text, boolean) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_delete_booking(text, uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_delete_customer_bookings(text, text) TO anon, authenticated;
 
 -- Berikan hak akses tabel clinic_settings untuk pengelolaan PIN hash admin
 GRANT ALL ON TABLE public.clinic_settings TO anon, authenticated;

@@ -5,7 +5,7 @@ import {
   SavedCustomerData,
   Booking,
 } from '../types';
-import { OPERATING_SLOTS } from '../data/initialServices';
+import { OPERATING_SLOTS, TIME_SESSION_OPTIONS } from '../data/initialServices';
 import {
   fetchBookedSlots,
   createBooking,
@@ -175,7 +175,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
         return;
       }
       if (!selectedTime) {
-        warning('Silakan pilih slot jam yang tersedia.');
+        warning('Silakan pilih salah satu preferensi waktu kunjungan.');
         return;
       }
       setCurrentStep(3);
@@ -265,7 +265,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
 *Tipe Kunjungan:* ${visitType}
 *Hari/Tanggal:* ${formattedDate}
-*Slot Jam:* ${selectedTime} WIB
+*Preferensi Waktu:* ${selectedTime}
 
 *DATA BUNDA & SI KECIL:*
 - Nama Bunda: ${momName.trim()}
@@ -483,11 +483,11 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-bold text-primary">
-                      Pilih Slot Jam Kedatangan / Kunjungan:
+                      Pilih Preferensi Waktu Kunjungan:
                     </label>
                     {isLoadingSlots && (
                       <span className="text-xs text-primary animate-pulse font-medium">
-                        Mengecek jadwal ketersediaan...
+                        Mengecek jadwal operasional...
                       </span>
                     )}
                   </div>
@@ -504,39 +504,54 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {OPERATING_SLOTS.map(time => {
-                        const { locked, reason } = isSlotLocked(time);
-                        const isSelected = selectedTime === time;
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {TIME_SESSION_OPTIONS.map(session => {
+                        const isSelected = selectedTime === session.value;
+                        const isAllDayBlocked = bookedSlots.some(s => s.time === 'ALL');
 
                         return (
                           <button
-                            key={time}
+                            key={session.id}
                             type="button"
-                            disabled={locked}
-                            onClick={() => setSelectedTime(time)}
-                            className={`p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center relative ${locked
-                              ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-75'
-                              : isSelected
-                                ? 'bg-primary text-white border-primary shadow-md font-bold'
-                                : 'bg-white border-slate-200 hover:border-primary/50 text-charcoal hover:bg-cream'
-                              }`}
+                            disabled={isAllDayBlocked}
+                            onClick={() => setSelectedTime(session.value)}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between ${
+                              isAllDayBlocked
+                                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-75'
+                                : isSelected
+                                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm font-medium'
+                                  : 'border-slate-200 hover:border-primary/40 bg-white hover:bg-cream/40'
+                            }`}
                           >
-                            <div className="flex items-center gap-1.5 text-sm font-bold">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span>{time} WIB</span>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                                    isSelected ? 'bg-primary text-white shadow-xs' : 'bg-primary/10 text-primary'
+                                  }`}
+                                >
+                                  <Clock className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <h4 className="font-serif font-bold text-sm text-primary">
+                                    {session.name}
+                                  </h4>
+                                  <span className="text-xs font-semibold text-accent-dark">
+                                    {session.timeRange}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {isSelected && (
+                                <div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                                  <Check className="w-3 h-3 stroke-[3]" />
+                                </div>
+                              )}
                             </div>
 
-                            <span
-                              className={`text-[10px] mt-1 px-2 py-0.5 rounded-full ${locked
-                                ? 'bg-rose-100 text-rose-700 font-bold'
-                                : isSelected
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-emerald-100 text-emerald-800 font-medium'
-                                }`}
-                            >
-                              {locked ? reason : 'Tersedia'}
-                            </span>
+                            <p className="text-[11px] text-charcoal-light mt-1 leading-relaxed">
+                              {session.description}
+                            </p>
                           </button>
                         );
                       })}
@@ -544,11 +559,11 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                   )}
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#FDFBF7] border border-primary/10 text-xs text-charcoal-light flex items-center gap-2.5">
-                  <ShieldCheck className="w-5 h-5 text-accent shrink-0" />
-                  <span>
-                    Slot jam yang Bunda pilih akan dikunci otomatis begitu dikonfirmasi agar waktu konsultasi Bunda tidak bentrok.
-                  </span>
+                <div className="p-4 rounded-2xl bg-[#FDFBF7] border border-primary/10 text-xs text-charcoal-light flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                  <p className="leading-relaxed">
+                    Pilihan waktu di atas merupakan preferensi awal Bunda. Jam pasti kedatangan / kunjungan homecare akan dikonfirmasi kembali oleh Bidan Indah melalui WhatsApp sesuai jadwal praktik hari tersebut.
+                  </p>
                 </div>
               </div>
             )}
@@ -710,7 +725,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                     </div>
 
                     <div>
-                      <span className="text-charcoal-light block">Hari & Jam:</span>
+                      <span className="text-charcoal-light block">Hari & Preferensi Waktu:</span>
                       <strong className="text-primary font-bold text-sm block">
                         {new Date(bookingDate).toLocaleDateString('id-ID', {
                           weekday: 'long',
@@ -720,7 +735,9 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                         })}
                       </strong>
                       <span className="text-accent-dark font-bold">
-                        Pukul {selectedTime} WIB
+                        {selectedTime.includes('WIB') || selectedTime.includes('Fleksibel')
+                          ? selectedTime
+                          : `Pukul ${selectedTime} WIB`}
                       </span>
                     </div>
 

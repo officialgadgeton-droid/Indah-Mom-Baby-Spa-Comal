@@ -138,6 +138,45 @@ export const OPERATING_SLOTS = [
   '18:00',
 ];
 
+export interface TimeSessionOption {
+  id: string;
+  name: string;
+  timeRange: string;
+  value: string;
+  description: string;
+}
+
+export const TIME_SESSION_OPTIONS: TimeSessionOption[] = [
+  {
+    id: 'pagi',
+    name: 'Sesi Pagi',
+    timeRange: '08:30 – 11:30 WIB',
+    value: 'Sesi Pagi (08:30 – 11:30 WIB)',
+    description: 'Pagi hari segar, ideal untuk stimulasi motorik & berjemur',
+  },
+  {
+    id: 'siang',
+    name: 'Sesi Siang',
+    timeRange: '13:00 – 15:30 WIB',
+    value: 'Sesi Siang (13:00 – 15:30 WIB)',
+    description: 'Waktu ideal setelah istirahat & tidur siang pertama',
+  },
+  {
+    id: 'sore',
+    name: 'Sesi Sore',
+    timeRange: '16:00 – 18:00 WIB',
+    value: 'Sesi Sore (16:00 – 18:00 WIB)',
+    description: 'Relaksasi sore hari sebelum waktu istirahat malam',
+  },
+  {
+    id: 'fleksibel',
+    name: 'Fleksibel',
+    timeRange: 'Menyesuaikan Jadwal Bidan',
+    value: 'Fleksibel (Menyesuaikan Jadwal Bidan)',
+    description: 'Waktu fleksibel, Bidan akan mencocokkan jadwal terbaik',
+  },
+];
+
 export const DEFAULT_SETTINGS: AppSettings = {
   clinic_name: 'Indah Mom & Baby Spa Comal',
   whatsapp_number: '6287856960422',

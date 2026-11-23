@@ -497,31 +497,189 @@ export async function fetchAdminBookings(
 export async function updateBookingStatus(
   pin: string,
   bookingId: string,
-  status: Booking['status']
+  status: Booking['status'],
+  newBookingTime?: string
 ): Promise<boolean> {
+  const timeToUpdate = newBookingTime && newBookingTime.trim() ? newBookingTime.trim() : null;
+
   if (supabase) {
     try {
+      // Coba panggil RPC dengan parameter p_booking_time
       const { data, error } = await supabase.rpc('update_booking_status', {
         pin_input: pin,
         p_booking_id: bookingId,
         p_status: status,
+        p_booking_time: timeToUpdate,
       });
+
       if (!error && data) {
+        // Sinkronkan ke local storage
+        const bookings = getLocalBookings();
+        const idx = bookings.findIndex(b => b.id === bookingId);
+        if (idx !== -1) {
+          bookings[idx].status = status;
+          if (timeToUpdate) {
+            bookings[idx].booking_time = timeToUpdate;
+          }
+          localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+        }
         return true;
+      }
+
+      if (error) {
+        console.warn('RPC update_booking_status dengan jam error, mencoba fallback parameter:', error);
+        // Fallback jika database Supabase belum menjalankan revisi schema RPC
+        const fallbackRes = await supabase.rpc('update_booking_status', {
+          pin_input: pin,
+          p_booking_id: bookingId,
+          p_status: status,
+        });
+
+        if (!fallbackRes.error) {
+          if (timeToUpdate) {
+            // Update waktu langsung ke tabel jika kolom tersedia
+            await supabase
+              .from('bookings')
+              .update({ booking_time: timeToUpdate })
+              .eq('id', bookingId);
+          }
+          // Sinkronkan ke local storage
+          const bookings = getLocalBookings();
+          const idx = bookings.findIndex(b => b.id === bookingId);
+          if (idx !== -1) {
+            bookings[idx].status = status;
+            if (timeToUpdate) {
+              bookings[idx].booking_time = timeToUpdate;
+            }
+            localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+          }
+          return true;
+        }
       }
     } catch (e) {
       console.warn('RPC update_booking_status error:', e);
     }
   }
 
+  // Local storage fallback
   const bookings = getLocalBookings();
   const idx = bookings.findIndex(b => b.id === bookingId);
   if (idx !== -1) {
     bookings[idx].status = status;
+    if (timeToUpdate) {
+      bookings[idx].booking_time = timeToUpdate;
+    }
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
     return true;
   }
   return false;
+}
+
+/**
+ * Memperbarui jam kedatangan / kunjungan final reservasi oleh Bidan
+ */
+export async function updateBookingTime(
+  pin: string,
+  bookingId: string,
+  newBookingTime: string
+): Promise<boolean> {
+  const bookings = getLocalBookings();
+  const current = bookings.find(b => b.id === bookingId);
+  const currentStatus = current ? current.status : 'confirmed';
+  return updateBookingStatus(pin, bookingId, currentStatus, newBookingTime);
+}
+
+/**
+ * Hapus data reservasi permanen dengan verifikasi PIN Admin (Supabase RPC + LocalStorage Fallback)
+ */
+export async function adminDeleteBooking(pin: string, bookingId: string): Promise<boolean> {
+  const isValid = await verifyAdminPin(pin);
+  if (!isValid) {
+    throw new Error('PIN Admin tidak valid!');
+  }
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('admin_delete_booking', {
+        pin_input: pin,
+        p_booking_id: bookingId,
+      });
+      if (error) {
+        console.error('RPC admin_delete_booking error:', error);
+        throw new Error(error.message || 'Gagal menghapus reservasi di Supabase');
+      }
+    } catch (e) {
+      if ((e as Error).message?.includes('PIN Admin tidak valid')) {
+        throw e;
+      }
+      console.warn('Supabase offline / RPC error, fallback ke local storage:', e);
+    }
+  }
+
+  // Sinkronkan selalu ke local storage
+  const bookings = getLocalBookings();
+  const filtered = bookings.filter(b => b.id !== bookingId);
+  localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(filtered));
+  return true;
+}
+
+/**
+ * Hapus seluruh riwayat reservasi pelanggan berdasarkan nomor WA dengan verifikasi PIN Admin (Supabase RPC + LocalStorage Fallback)
+ */
+export async function adminDeleteCustomerBookings(
+  pin: string,
+  whatsappNumber: string
+): Promise<{ success: boolean; count: number }> {
+  const isValid = await verifyAdminPin(pin);
+  if (!isValid) {
+    throw new Error('PIN Admin tidak valid!');
+  }
+
+  let deletedCount = 0;
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('admin_delete_customer_bookings', {
+        pin_input: pin,
+        p_whatsapp_number: whatsappNumber,
+      });
+      if (error) {
+        console.error('RPC admin_delete_customer_bookings error:', error);
+        throw new Error(error.message || 'Gagal menghapus data pelanggan di Supabase');
+      }
+      deletedCount = typeof data === 'number' ? data : 0;
+    } catch (e) {
+      if ((e as Error).message?.includes('PIN Admin tidak valid')) {
+        throw e;
+      }
+      console.warn('Supabase offline / RPC error, fallback ke local storage:', e);
+    }
+  }
+
+  // Sinkronkan selalu ke local storage
+  const targetDigits = whatsappNumber.replace(/[^0-9]/g, '');
+  const targetNorm = targetDigits.startsWith('0')
+    ? '62' + targetDigits.slice(1)
+    : targetDigits.startsWith('8')
+    ? '628' + targetDigits.slice(1)
+    : targetDigits;
+
+  const bookings = getLocalBookings();
+  const remaining = bookings.filter(b => {
+    const bDigits = b.whatsapp_number.replace(/[^0-9]/g, '');
+    const bNorm = bDigits.startsWith('0')
+      ? '62' + bDigits.slice(1)
+      : bDigits.startsWith('8')
+      ? '628' + bDigits.slice(1)
+      : bDigits;
+    const matches = b.whatsapp_number === whatsappNumber || (bNorm && bNorm === targetNorm);
+    return !matches;
+  });
+
+  const localDeleted = bookings.length - remaining.length;
+  localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(remaining));
+
+  return { success: true, count: deletedCount || localDeleted };
 }
 
 export async function saveService(

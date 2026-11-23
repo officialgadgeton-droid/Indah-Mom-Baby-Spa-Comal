@@ -3,6 +3,7 @@ import { Booking, Service } from '../../types';
 import {
   fetchAdminBookings,
   updateBookingStatus,
+  adminDeleteBooking,
   fetchAllServicesAdmin,
 } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
@@ -17,8 +18,12 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Trash2,
+  Clock,
+  Check,
 } from 'lucide-react';
 import { ManualBookingModal } from './ManualBookingModal';
+import { PinConfirmModal } from './PinConfirmModal';
 
 interface BookingsTabProps {
   adminPin: string;
@@ -35,8 +40,126 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ adminPin }) => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Modal manual booking
+  // Modal manual booking & delete confirm
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+
+  // Penyesuaian jam final oleh Bidan
+  const [adjustingBookingId, setAdjustingBookingId] = useState<string | null>(null);
+  const [adjustedTimeInput, setAdjustedTimeInput] = useState<string>('');
+
+  const QUICK_TIME_PRESETS = [
+    '08:30 WIB',
+    '09:00 WIB',
+    '09:30 WIB',
+    '10:00 WIB',
+    '10:30 WIB',
+    '11:00 WIB',
+    '13:30 WIB',
+    '14:00 WIB',
+    '14:30 WIB',
+    '15:00 WIB',
+    '16:00 WIB',
+    '16:30 WIB',
+    '17:00 WIB',
+  ];
+
+  const handleOpenTimeAdjuster = (booking: Booking) => {
+    setAdjustingBookingId(booking.id);
+    // Jika booking_time sudah berupa jam biasa, gunakan itu. Jika berupa nama sesi, beri rekomendasi awal
+    const current = booking.booking_time || '';
+    if (current.includes('08:') || current.includes('09:') || current.includes('10:') || current.includes('11:') || current.includes('13:') || current.includes('14:') || current.includes('15:') || current.includes('16:') || current.includes('17:')) {
+      setAdjustedTimeInput(current);
+    } else if (current.includes('Pagi')) {
+      setAdjustedTimeInput('09:30 WIB');
+    } else if (current.includes('Siang')) {
+      setAdjustedTimeInput('14:00 WIB');
+    } else if (current.includes('Sore')) {
+      setAdjustedTimeInput('16:30 WIB');
+    } else {
+      setAdjustedTimeInput(current || '10:00 WIB');
+    }
+  };
+
+  const handleConfirmAndNotifyWA = async (booking: Booking, finalTime: string) => {
+    const timeToSave = finalTime.trim() || booking.booking_time;
+    if (!timeToSave) {
+      error('Silakan tentukan jam final terlebih dahulu.');
+      return;
+    }
+
+    try {
+      const ok = await updateBookingStatus(adminPin, booking.id, 'confirmed', timeToSave);
+      if (!ok) {
+        error('Gagal memperbarui status dan jam reservasi.');
+        return;
+      }
+
+      success(`Reservasi ${booking.booking_code} berhasil dikonfirmasi pada jam ${timeToSave}!`);
+      setAdjustingBookingId(null);
+      await loadData();
+
+      // Format WhatsApp konfirmasi jadwal final Bidan untuk Bunda
+      const cleanNumber = booking.whatsapp_number.replace(/[^0-9]/g, '');
+      const cleanWa = cleanNumber.startsWith('0')
+        ? '62' + cleanNumber.substring(1)
+        : cleanNumber;
+
+      const formattedDate = new Date(booking.booking_date).toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+
+      const displayFinalTime = timeToSave.includes('WIB') ? timeToSave : `${timeToSave} WIB`;
+
+      const msg =
+`*KONFIRMASI JADWAL RESERVASI INDAH MOM & BABY SPA COMAL* 🌸
+---------------------------------------
+Halo Bunda *${booking.mom_name}*, alhamdulillah jadwal reservasi Bunda & Si Kecil telah kami konfirmasi:
+
+- *Kode Booking:* ${booking.booking_code}
+- *Layanan:* ${booking.service_name}
+- *Tipe Layanan:* ${booking.visit_type}
+- *Hari / Tanggal:* ${formattedDate}
+- *Waktu / Jam Pasti:* ${displayFinalTime}
+${booking.child_name ? `- *Nama Si Kecil:* ${booking.child_name} ${booking.child_age ? `(${booking.child_age})` : ''}\n` : ''}${booking.address ? `- *Alamat Kunjungan:* ${booking.address}\n` : ''}${booking.notes ? `- *Catatan Khusus:* ${booking.notes}\n` : ''}---------------------------------------
+*TIPS PERSIAPAN SEBELUM PERAWATAN:*
+1. Pastikan Si Kecil dalam kondisi nyaman, sudah cukup istirahat, dan tidak sedang rewel.
+2. Disarankan tidak langsung dipijat setelah minum susu kenyang (beri jeda 30–45 menit).
+3. Jika Si Kecil mendadak demam atau Bunda ingin menyesuaikan jam, segera kabari kami ya.
+
+Sampai jumpa di waktu perawatan Bunda! Terima kasih banyak sudah mempercayakan perawatan Si Kecil di Indah Mom & Baby Spa Comal ❤️`;
+
+      window.open(`https://wa.me/${cleanWa}?text=${encodeURIComponent(msg)}`, '_blank');
+    } catch (err) {
+      console.error(err);
+      error('Terjadi kendala saat memperbarui reservasi.');
+    }
+  };
+
+  const handleSaveTimeOnly = async (booking: Booking, newTime: string) => {
+    const timeToSave = newTime.trim();
+    if (!timeToSave) {
+      error('Jam reservasi tidak boleh kosong.');
+      return;
+    }
+
+    try {
+      const ok = await updateBookingStatus(adminPin, booking.id, booking.status, timeToSave);
+      if (ok) {
+        success(`Jam reservasi berhasil diubah menjadi "${timeToSave}".`);
+        setAdjustingBookingId(null);
+        await loadData();
+      } else {
+        error('Gagal memperbarui jam reservasi.');
+      }
+    } catch (err) {
+      console.error(err);
+      error('Terjadi kendala saat memperbarui jam reservasi.');
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -93,7 +216,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ adminPin }) => {
 Mengingatkan kembali jadwal perawatan untuk Bunda / Si Kecil tercinta:
 - *Layanan:* ${booking.service_name}
 - *Jadwal:* ${formattedDate}
-- *Pukul:* ${booking.booking_time} WIB
+- *Pukul:* ${booking.booking_time} ${booking.booking_time.includes('WIB') ? '' : 'WIB'}
 - *Tipe:* ${booking.visit_type}
 ${booking.address ? `- *Alamat Homecare:* ${booking.address}\n` : ''}
 Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang rewel, silakan kabari kami. Terima kasih banyak Bunda! ❤️`;
@@ -291,7 +414,7 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-charcoal pt-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Calendar className="w-4 h-4 text-accent shrink-0" />
                         <span>
                           {new Date(bk.booking_date).toLocaleDateString('id-ID', {
@@ -300,8 +423,20 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
                             month: 'short',
                             year: 'numeric',
                           })}{' '}
-                          - <strong>{bk.booking_time} WIB</strong>
+                          -{' '}
+                          <strong className="text-primary font-bold">
+                            {bk.booking_time} {bk.booking_time.includes('WIB') ? '' : 'WIB'}
+                          </strong>
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTimeAdjuster(bk)}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-[11px] font-bold border border-amber-300 transition-all shadow-xs"
+                          title="Sesuaikan jam kedatangan / kunjungan final"
+                        >
+                          <Clock className="w-3 h-3 text-accent" />
+                          <span>Sesuaikan Jam</span>
+                        </button>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -332,6 +467,91 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
                           Catatan Bunda: "{bk.notes}"
                         </div>
                       )}
+
+                      {/* Panel Penyesuaian Jam Final Bidan */}
+                      {adjustingBookingId === bk.id && (
+                        <div className="sm:col-span-2 p-4 rounded-2xl bg-gradient-to-r from-amber-50/90 via-[#FAF6F0] to-accent/10 border-2 border-accent/40 shadow-sm space-y-3 animate-fade-in mt-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs font-bold text-primary">
+                              <Clock className="w-4 h-4 text-accent" />
+                              <span>Sesuaikan Jam Kedatangan / Kunjungan Final</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setAdjustingBookingId(null)}
+                              className="text-xs text-slate-400 hover:text-slate-600 font-bold px-2 py-0.5 rounded hover:bg-slate-200/50"
+                            >
+                              ✕ Tutup
+                            </button>
+                          </div>
+
+                          <div className="text-[11px] text-charcoal-light">
+                            Preferensi Waktu Bunda: <strong className="text-primary">{bk.booking_time}</strong>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-primary mb-1.5">
+                              Pilih Preset Jam atau Ketik Jam Final:
+                            </label>
+                            <div className="flex flex-wrap gap-1.5 mb-2.5">
+                              {QUICK_TIME_PRESETS.map(preset => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onClick={() => setAdjustedTimeInput(preset)}
+                                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all border ${
+                                    adjustedTimeInput === preset
+                                      ? 'bg-primary text-white border-primary shadow-xs font-bold'
+                                      : 'bg-white hover:bg-cream border-slate-200 text-charcoal'
+                                  }`}
+                                >
+                                  {preset}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="Contoh: 10:30 WIB atau Sesi Pagi - 09:30 WIB"
+                                value={adjustedTimeInput}
+                                onChange={e => setAdjustedTimeInput(e.target.value)}
+                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-medium text-charcoal bg-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-accent/20">
+                            <button
+                              type="button"
+                              onClick={() => handleConfirmAndNotifyWA(bk, adjustedTimeInput)}
+                              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors"
+                              title="Simpan jam final, ubah status jadi confirmed, dan buka WhatsApp konfirmasi ke Bunda"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>Konfirmasi &amp; Kabari WA</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSaveTimeOnly(bk, adjustedTimeInput)}
+                              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-300 transition-colors"
+                              title="Simpan jam final ke database tanpa membuka WhatsApp"
+                            >
+                              <Check className="w-3.5 h-3.5 text-slate-600" />
+                              <span>Simpan Jam Saja</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setAdjustingBookingId(null)}
+                              className="px-3 py-2 rounded-xl text-xs text-slate-500 hover:text-slate-700 font-medium"
+                            >
+                              Batal
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -340,12 +560,12 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
                     {/* Konfirmasi Jadwal (Mengunci Slot) */}
                     {bk.status === 'pending' && (
                       <button
-                        onClick={() => handleUpdateStatus(bk.id, 'confirmed')}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors"
-                        title="Konfirmasi booking & kunci slot jam"
+                        onClick={() => handleOpenTimeAdjuster(bk)}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-xs"
+                        title="Tentukan jam final dan konfirmasi jadwal ke Bunda via WhatsApp"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Konfirmasi Jadwal</span>
+                        <span>Konfirmasi &amp; Sesuaikan Jam</span>
                       </button>
                     )}
 
@@ -385,6 +605,16 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
                         <span>Batalkan</span>
                       </button>
                     )}
+
+                    {/* Hapus Permanen dengan Verifikasi PIN Admin */}
+                    <button
+                      onClick={() => setBookingToDelete(bk)}
+                      className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/70 font-semibold text-xs transition-colors"
+                      title="Hapus reservasi secara permanen dari database"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Hapus</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -400,6 +630,52 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
         services={services}
         onBookingCreated={loadData}
       />
+
+      {/* Modal Konfirmasi Hapus Permanen dengan Verifikasi PIN Admin */}
+      {bookingToDelete && (
+        <PinConfirmModal
+          isOpen={Boolean(bookingToDelete)}
+          onClose={() => setBookingToDelete(null)}
+          title="Hapus Reservasi Permanen"
+          itemSummary={
+            <div className="space-y-1.5 text-xs text-charcoal">
+              <div className="flex items-center justify-between">
+                <span className="text-charcoal-light">Kode Reservasi:</span>
+                <span className="font-mono font-bold text-primary">{bookingToDelete.booking_code}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-charcoal-light">Nama Bunda:</span>
+                <span className="font-semibold text-slate-800">{bookingToDelete.mom_name}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-charcoal-light">Layanan:</span>
+                <span className="text-slate-700 font-medium truncate max-w-[200px]" title={bookingToDelete.service_name}>
+                  {bookingToDelete.service_name}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-charcoal-light">Jadwal:</span>
+                <span>
+                  {bookingToDelete.booking_date} ({bookingToDelete.booking_time}{' '}
+                  {bookingToDelete.booking_time.includes('WIB') ? '' : 'WIB'})
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-charcoal-light">Status Saat Ini:</span>
+                <span className="capitalize font-semibold text-slate-700">{bookingToDelete.status}</span>
+              </div>
+            </div>
+          }
+          warningText="Reservasi ini akan dihapus secara permanen dari database Supabase dan penyimpanan lokal. Data yang dihapus tidak dapat dipulihkan."
+          confirmButtonText="Verifikasi & Hapus Permanen"
+          onConfirm={async (enteredPin) => {
+            await adminDeleteBooking(enteredPin, bookingToDelete.id);
+            success(`Reservasi ${bookingToDelete.booking_code} (${bookingToDelete.mom_name}) berhasil dihapus permanen.`);
+            setBookingToDelete(null);
+            await loadData();
+          }}
+        />
+      )}
     </div>
   );
 };

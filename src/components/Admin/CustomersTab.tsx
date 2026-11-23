@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Booking } from '../../types';
-import { fetchAdminBookings, getAdminSessionPin } from '../../lib/supabase';
+import { fetchAdminBookings, getAdminSessionPin, adminDeleteCustomerBookings } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 import {
   Users,
@@ -22,7 +22,9 @@ import {
   FileText,
   Heart,
   Award,
+  Trash2,
 } from 'lucide-react';
+import { PinConfirmModal } from './PinConfirmModal';
 
 export interface AggregatedCustomer {
   normalizedPhone: string;
@@ -79,6 +81,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({ adminPin }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'loyal' | 'new'>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregatedCustomer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<AggregatedCustomer | null>(null);
 
   const loadData = async (showToast: boolean = false) => {
     setIsLoading(true);
@@ -483,24 +486,37 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
                   </div>
 
                   {/* Actions Footer */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCustomer(customer)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-primary/20 hover:bg-primary/5 text-primary font-bold text-xs transition-all"
-                    >
-                      <History className="w-3.5 h-3.5" />
-                      <span>Riwayat ({customer.totalBookings})</span>
-                    </button>
+                  <div className="pt-3 border-t border-slate-100 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCustomer(customer)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-primary/20 hover:bg-primary/5 text-primary font-bold text-xs transition-all"
+                      >
+                        <History className="w-3.5 h-3.5" />
+                        <span>Riwayat ({customer.totalBookings})</span>
+                      </button>
 
+                      <button
+                        type="button"
+                        onClick={() => handleOpenWhatsApp(customer)}
+                        title="Follow-up WhatsApp Bunda"
+                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        <span>Chat WA</span>
+                      </button>
+                    </div>
+
+                    {/* Tombol Hapus Data Pelanggan */}
                     <button
                       type="button"
-                      onClick={() => handleOpenWhatsApp(customer)}
-                      title="Follow-up WhatsApp Bunda"
-                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all"
+                      onClick={() => setCustomerToDelete(customer)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-rose-600 hover:text-rose-700 bg-rose-50/50 hover:bg-rose-100/70 border border-rose-200/70 font-semibold text-xs transition-colors"
+                      title="Hapus data pelanggan dan seluruh riwayat reservasinya"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Chat WA</span>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Hapus Data Pelanggan</span>
                     </button>
                   </div>
                 </div>
@@ -618,7 +634,10 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
                           </div>
                           <div className="text-[11px] text-accent-dark font-medium flex items-center justify-end gap-1 mt-0.5">
                             <Clock className="w-3 h-3" />
-                            <span>{booking.booking_time} WIB</span>
+                            <span>
+                              {booking.booking_time}{' '}
+                              {booking.booking_time.includes('WIB') ? '' : 'WIB'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -669,14 +688,26 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedCustomer(null)}
-                className="py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-semibold text-charcoal hover:bg-slate-100"
-              >
-                Tutup
-              </button>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCustomer(null)}
+                  className="py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-semibold text-charcoal hover:bg-slate-100"
+                >
+                  Tutup
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCustomerToDelete(selectedCustomer)}
+                  className="py-2.5 px-3 rounded-xl border border-rose-200 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-1.5 transition-colors"
+                  title="Hapus pelanggan ini beserta seluruh riwayat reservasinya"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus Pelanggan</span>
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -689,6 +720,50 @@ Terima kasih banyak telah mempercayakan kenyamanan Si Kecil kepada kami! ❤️`
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Data Pelanggan dengan Verifikasi PIN Admin */}
+      {customerToDelete && (
+        <PinConfirmModal
+          isOpen={Boolean(customerToDelete)}
+          onClose={() => setCustomerToDelete(null)}
+          title="Hapus Data Pelanggan Permanen"
+          itemSummary={
+            <div className="space-y-1.5 text-xs text-charcoal">
+              <div className="flex items-center justify-between">
+                <span className="text-charcoal-light">Nama Bunda:</span>
+                <span className="font-bold text-primary">{customerToDelete.momName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-charcoal-light">No. WhatsApp:</span>
+                <span className="font-mono font-semibold">{customerToDelete.whatsappNumber}</span>
+              </div>
+              {customerToDelete.childName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-charcoal-light">Nama Si Kecil:</span>
+                  <span>
+                    {customerToDelete.childName} {customerToDelete.childAge ? `(${customerToDelete.childAge})` : ''}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-charcoal-light">Total Riwayat:</span>
+                <span className="font-bold text-rose-700">{customerToDelete.totalBookings} reservasi</span>
+              </div>
+            </div>
+          }
+          warningText="Perhatian: Menghapus pelanggan ini akan menghapus SELURUH riwayat reservasi yang terhubung dengan nomor WhatsApp ini secara permanen dari Supabase dan memori lokal. Tindakan ini tidak dapat dibatalkan."
+          confirmButtonText="Verifikasi & Hapus Seluruh Riwayat"
+          onConfirm={async (enteredPin) => {
+            const res = await adminDeleteCustomerBookings(enteredPin, customerToDelete.whatsappNumber);
+            success(`Data Bunda ${customerToDelete.momName} dan ${res.count} riwayat reservasi berhasil dihapus.`);
+            if (selectedCustomer?.whatsappNumber === customerToDelete.whatsappNumber) {
+              setSelectedCustomer(null);
+            }
+            setCustomerToDelete(null);
+            await loadData();
+          }}
+        />
       )}
     </div>
   );

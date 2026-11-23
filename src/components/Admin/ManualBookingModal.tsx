@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Service, VisitType } from '../../types';
-import { OPERATING_SLOTS } from '../../data/initialServices';
+import { OPERATING_SLOTS, TIME_SESSION_OPTIONS } from '../../data/initialServices';
 import { createBooking } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 import { X, Check } from 'lucide-react';
@@ -177,18 +177,27 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-primary mb-1">
-                Jam Slot:
+                Jam / Sesi:
               </label>
               <select
                 value={bookingTime}
                 onChange={e => setBookingTime(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-charcoal"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-charcoal bg-white"
               >
-                {OPERATING_SLOTS.map(t => (
-                  <option key={t} value={t}>
-                    {t} WIB
-                  </option>
-                ))}
+                <optgroup label="Preferensi Sesi Fleksibel">
+                  {TIME_SESSION_OPTIONS.map(s => (
+                    <option key={s.id} value={s.value}>
+                      {s.name} ({s.timeRange})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Jam Tertentu">
+                  {OPERATING_SLOTS.map(t => (
+                    <option key={t} value={`${t} WIB`}>
+                      {t} WIB
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
           </div>
