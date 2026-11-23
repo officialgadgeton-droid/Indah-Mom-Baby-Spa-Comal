@@ -94,7 +94,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     if (!operationalStatus || operationalStatus.status === 'open') {
       return {
         label: 'Buka Normal',
-        color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        title: 'Klinik Buka Normal Hari Ini',
+        color: 'bg-emerald-50 text-emerald-900 border-emerald-200',
         dot: 'bg-emerald-500',
         note: 'Praktik klinik & kunjungan homecare beroperasi normal hari ini.',
       };
@@ -102,20 +103,22 @@ export const Navbar: React.FC<NavbarProps> = ({
     if (operationalStatus.status === 'busy_homecare') {
       return {
         label: 'Sedang Homecare / Persalinan',
-        color: 'bg-amber-50 text-amber-800 border-amber-200',
+        title: 'Info Praktik Hari Ini: Bidan Sedang Bertugas Homecare / Persalinan',
+        color: 'bg-amber-50 text-amber-950 border-amber-300',
         dot: 'bg-amber-500 animate-ping',
         note:
           operationalStatus.note ||
-          'Bidan sedang kunjungan luar/persalinan. Reservasi online tetap dibuka, konfirmasi via WA.',
+          'Bidan sedang bertugas di luar/persalinan, reservasi online tetap berjalan & akan segera dikonfirmasi via WhatsApp.',
       };
     }
     return {
-      label: 'Tutup Praktik Hari Ini',
-      color: 'bg-rose-50 text-rose-800 border-rose-200',
+      label: 'Klinik Tutup Sementara',
+      title: 'Info Praktik Hari Ini: Klinik Tutup Sementara',
+      color: 'bg-rose-50 text-rose-950 border-rose-300',
       dot: 'bg-rose-500',
       note:
         operationalStatus.note ||
-        'Klinik tutup hari ini. Bunda tetap dapat membuat reservasi untuk hari berikutnya.',
+        'Praktik klinik hari ini tutup/libur. Bunda tetap dapat memilih jadwal reservasi untuk hari berikutnya.',
     };
   };
 
@@ -129,28 +132,29 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div
             className={`py-2 px-3 sm:px-6 text-xs font-medium text-white shadow-sm transition-all ${
               operationalStatus.status === 'busy_homecare'
-                ? 'bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 border-b border-amber-800/20'
-                : 'bg-gradient-to-r from-rose-700 via-rose-600 to-rose-700 border-b border-rose-800/20'
+                ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 border-b border-amber-700/20'
+                : 'bg-gradient-to-r from-rose-600 via-rose-500 to-rose-600 border-b border-rose-700/20'
             }`}
           >
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-2.5">
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 {operationalStatus.status === 'busy_homecare' ? (
-                  <Clock className="w-4 h-4 shrink-0 animate-pulse text-amber-200" />
+                  <Clock className="w-4 h-4 shrink-0 animate-pulse text-amber-100" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-200" />
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-100" />
                 )}
                 <div className="truncate text-[11px] sm:text-xs">
                   <strong className="font-bold">
                     {operationalStatus.status === 'busy_homecare'
-                      ? 'Bidan Sedang Kunjungan Homecare / Persalinan:'
-                      : 'Pemberitahuan Praktik:'}
+                      ? 'Info Praktik Hari Ini: Bidan Sedang Bertugas Homecare / Persalinan'
+                      : 'Info Praktik Hari Ini: Klinik Tutup Sementara'}
                   </strong>{' '}
-                  <span>
+                  <span className="opacity-95">
+                    —{' '}
                     {operationalStatus.note ||
                       (operationalStatus.status === 'busy_homecare'
-                        ? 'Reservasi online tetap dibuka, konfirmasi jadwal & kunjungan akan dihubungi via WA.'
-                        : 'Klinik hari ini tutup sementara. Bunda tetap dapat membuat reservasi untuk hari berikutnya.')}
+                        ? 'Bidan sedang bertugas di luar/persalinan, reservasi online tetap berjalan & akan segera dikonfirmasi via WhatsApp.'
+                        : 'Praktik klinik hari ini tutup/libur. Bunda tetap dapat memilih jadwal reservasi untuk hari berikutnya.')}
                   </span>
                 </div>
               </div>
@@ -344,24 +348,44 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* 2. Scrollable Body Content */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-              {/* Card Status Operasional Hari Ini */}
+              {/* Card Status Operasional Hari Ini (Sidebar Mobile) */}
               <div
-                className={`p-3 rounded-xl border text-xs ${statusInfo.color} transition-all shadow-xs`}
+                className={`p-3.5 rounded-2xl border text-xs ${statusInfo.color} transition-all shadow-xs space-y-2`}
               >
-                <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="font-bold text-[11px] uppercase tracking-wider">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="font-bold text-[10px] tracking-wider uppercase opacity-75">
                     Status Operasional
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/70 border border-current">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/80 border border-current shadow-2xs">
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`}
+                      className={`w-2 h-2 rounded-full shrink-0 ${statusInfo.dot}`}
                     />
                     {statusInfo.label}
                   </span>
                 </div>
-                <p className="text-[11px] leading-relaxed opacity-90">
-                  {statusInfo.note}
-                </p>
+                <div>
+                  <h4 className="font-bold text-xs leading-snug">
+                    {statusInfo.title}
+                  </h4>
+                  <p className="text-[11px] leading-relaxed mt-1 opacity-90">
+                    {statusInfo.note}
+                  </p>
+                </div>
+                {operationalStatus && operationalStatus.status !== 'open' && (
+                  <a
+                    href={`https://wa.me/${cleanWa}?text=${encodeURIComponent(
+                      operationalStatus.status === 'busy_homecare'
+                        ? 'Halo Bidan Indah, saya ingin bertanya terkait jadwal reservasi / homecare hari ini.'
+                        : 'Halo Bidan Indah, saya ingin konsultasi terkait jadwal perawatan Si Kecil.'
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-xl text-[11px] font-bold text-white bg-primary hover:bg-primary-dark transition-colors shadow-2xs mt-1"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Konsultasi WA Langsung</span>
+                  </a>
+                )}
               </div>
 
               {/* Daftar Navigasi Lengkap */}

@@ -793,23 +793,24 @@ export async function adminSaveTreatmentNote(
 
 /**
  * Membaca status operasional klinik real-time (Supabase clinic_settings + LocalStorage fallback)
+ * Mengambil baris pertama dari public.clinic_settings dengan .limit(1).maybeSingle()
  */
-export async function fetchClinicOperationalStatus(): Promise<ClinicOperationalStatus> {
+export async function fetchClinicSettings(): Promise<ClinicOperationalStatus> {
   if (supabase) {
     try {
       const { data, error } = await supabase
         .from('clinic_settings')
         .select('operational_status, operational_note, updated_at')
         .not('operational_status', 'is', null)
-        .order('updated_at', { ascending: false })
-        .limit(1);
+        .order('updated_at', { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (!error && data && data.length > 0) {
-        const row = data[0];
+      if (!error && data && data.operational_status) {
         const result: ClinicOperationalStatus = {
-          status: (row.operational_status as OperationalStatus) || 'open',
-          note: row.operational_note || '',
-          updated_at: row.updated_at,
+          status: (data.operational_status as OperationalStatus) || 'open',
+          note: data.operational_note || '',
+          updated_at: data.updated_at,
         };
         localStorage.setItem(STORAGE_KEYS.OPERATIONAL_STATUS, JSON.stringify(result));
         return result;
@@ -828,6 +829,9 @@ export async function fetchClinicOperationalStatus(): Promise<ClinicOperationalS
   }
   return { status: 'open', note: '' };
 }
+
+// Alias untuk kompatibilitas ke belakang
+export const fetchClinicOperationalStatus = fetchClinicSettings;
 
 /**
  * Memperbarui status operasional klinik secara real-time oleh Bidan (Supabase RPC + LocalStorage fallback)
@@ -850,9 +854,29 @@ export async function updateClinicOperationalStatus(
 
       if (error) {
         console.warn('RPC admin_update_operational_status error, fallback direct upsert/local:', error);
+        await supabase
+          .from('clinic_settings')
+          .upsert({
+            key: 'clinic_operational_status',
+            value: status,
+            operational_status: status,
+            operational_note: cleanNote,
+            updated_at: new Date().toISOString(),
+          });
       }
     } catch (e) {
       console.warn('RPC admin_update_operational_status exception, fallback local:', e);
+      try {
+        await supabase
+          .from('clinic_settings')
+          .upsert({
+            key: 'clinic_operational_status',
+            value: status,
+            operational_status: status,
+            operational_note: cleanNote,
+            updated_at: new Date().toISOString(),
+          });
+      } catch {}
     }
   }
 

@@ -372,18 +372,18 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
           {/* Banner Pemberitahuan Status Operasional (Homecare / Tutup Hari Ini) */}
           {operationalStatus && operationalStatus.status !== 'open' && (
             <div
-              className={`p-4 sm:p-5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+              className={`p-4 sm:p-5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
                 operationalStatus.status === 'busy_homecare'
-                  ? 'bg-amber-50/90 border-amber-200 text-amber-950'
-                  : 'bg-rose-50/90 border-rose-200 text-rose-950'
+                  ? 'bg-amber-50/95 border-amber-200 text-amber-950'
+                  : 'bg-rose-50/95 border-rose-200 text-rose-950'
               }`}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3.5">
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
                     operationalStatus.status === 'busy_homecare'
                       ? 'bg-amber-500 text-white'
-                      : 'bg-rose-600 text-white'
+                      : 'bg-rose-500 text-white'
                   }`}
                 >
                   {operationalStatus.status === 'busy_homecare' ? (
@@ -393,16 +393,16 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                   )}
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm leading-tight">
+                  <h4 className="font-bold text-sm leading-snug">
                     {operationalStatus.status === 'busy_homecare'
-                      ? 'Informasi: Bidan Sedang Bertugas Homecare / Membantu Persalinan'
-                      : 'Pemberitahuan: Praktik Hari Ini Tutup Sementara'}
+                      ? 'Info Praktik Hari Ini: Bidan Sedang Bertugas Homecare / Persalinan'
+                      : 'Info Praktik Hari Ini: Klinik Tutup Sementara'}
                   </h4>
-                  <p className="text-xs text-charcoal/80 mt-1 leading-relaxed">
+                  <p className="text-xs text-charcoal/85 mt-1 leading-relaxed">
                     {operationalStatus.note ||
                       (operationalStatus.status === 'busy_homecare'
-                        ? 'Bunda tetap dipersilakan memilih layanan dan mengirim formulir reservasi. Jadwal kedatangan dan jam final akan dikonfirmasi langsung oleh Bidan melalui WhatsApp.'
-                        : 'Klinik hari ini sedang libur praktik. Bunda tetap dapat membuat pemesanan jadwal untuk hari-hari berikutnya.')}
+                        ? 'Bidan sedang bertugas di luar/persalinan, reservasi online tetap berjalan & akan segera dikonfirmasi via WhatsApp.'
+                        : 'Praktik klinik hari ini tutup/libur. Bunda tetap dapat memilih jadwal reservasi untuk hari berikutnya.')}
                   </p>
                 </div>
               </div>

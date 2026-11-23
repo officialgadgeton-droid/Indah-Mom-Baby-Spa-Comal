@@ -5,14 +5,23 @@ import { SpaBubbles } from './SpaBubbles';
 interface HeroProps {
   onBookClick: () => void;
   whatsappNumber?: string;
+  hasTopBanner?: boolean;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '6287856960422' }) => {
+export const Hero: React.FC<HeroProps> = ({
+  onBookClick,
+  whatsappNumber = '6287856960422',
+  hasTopBanner = false,
+}) => {
   const cleanDigits = whatsappNumber.replace(/[^0-9]/g, '');
   const cleanWa = cleanDigits.startsWith('0') ? '62' + cleanDigits.slice(1) : cleanDigits;
 
   return (
-    <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden bg-gradient-to-b from-[#FAF4FD] via-[#FDFBF7] to-cream">
+    <section
+      className={`relative ${
+        hasTopBanner ? 'pt-6 pb-16 md:pt-10 md:pb-24' : 'pt-28 pb-16 md:pt-36 md:pb-24'
+      } overflow-hidden bg-gradient-to-b from-[#FAF4FD] via-[#FDFBF7] to-cream`}
+    >
       {/* 1. Ambient Gradient Blobs (Deep Plum #4A154B/10 & Warm Gold #D4AF37/15) - Floating Smoothly */}
       <div
         className="absolute -top-12 left-1/4 w-[420px] h-[420px] rounded-full blur-3xl pointer-events-none z-0 animate-float-slow-1 opacity-90"

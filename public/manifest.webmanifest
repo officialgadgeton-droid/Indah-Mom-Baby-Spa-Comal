@@ -1,6 +1,7 @@
 {
   "name": "Indah Mom & Baby Spa Comal",
   "short_name": "Indah Spa",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

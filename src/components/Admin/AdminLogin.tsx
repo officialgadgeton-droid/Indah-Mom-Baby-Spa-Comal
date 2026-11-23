@@ -200,12 +200,14 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ mode, onSuccess, onBackT
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLocked, isVerifying, pin]);
 
+  const publicSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL || 'https://indahmombabyspa.com';
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-x-hidden bg-gradient-to-br from-[#2F0B3D] via-[#5B2C6F] to-[#1F2937]">
       {/* Return to Home Link/Button */}
       {isAdminMode ? (
         <a
-          href="https://indah-mom-baby-spa-comal.pages.dev"
+          href={publicSiteUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-2 rounded-full text-xs font-semibold backdrop-blur-md transition-all border border-white/10 shadow-sm"

@@ -72,8 +72,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ mode, onBackToHome }) 
 
   const handleBack = () => {
     const isAdminMode = mode === 'admin' || import.meta.env.VITE_APP_MODE === 'admin';
+    const publicUrl = import.meta.env.VITE_PUBLIC_SITE_URL || 'https://indahmombabyspa.com';
     if (isAdminMode) {
-      window.open('https://indah-mom-baby-spa-comal.pages.dev', '_blank', 'noopener,noreferrer');
+      window.open(publicUrl, '_blank', 'noopener,noreferrer');
     } else if (onBackToHome) {
       onBackToHome();
     }

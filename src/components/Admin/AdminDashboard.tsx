@@ -65,6 +65,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<AdminTab>('bookings');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const activeAdminPin = (adminPin && adminPin.trim()) || getAdminSessionPin();
+  const publicSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL || 'https://indahmombabyspa.com';
 
   // PWA Install Hook
   const { isInstallable, isInstalled, isIos, installApp, showGuideModal, setShowGuideModal } =
@@ -202,14 +203,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span>{isSupabaseConfigured ? 'Supabase Connected' : 'Local Storage Mode'}</span>
               </div>
 
-              <button
-                onClick={onBackToHome}
+              <a
+                href={publicSiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-charcoal text-xs font-semibold"
-                title="Buka Landing Page"
+                title="Buka Website Publik"
               >
                 <Home className="w-3.5 h-3.5" />
                 <span>Lihat Web</span>
-              </button>
+              </a>
 
               <button
                 onClick={onLogout}
@@ -619,16 +622,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {/* Action Buttons in Drawer */}
               <div className="pt-2 space-y-2 border-t border-slate-100">
                 {/* 1. Lihat Web Publik */}
-                <button
-                  onClick={() => {
-                    setIsDrawerOpen(false);
-                    onBackToHome();
-                  }}
+                <a
+                  href={publicSiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsDrawerOpen(false)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-charcoal font-semibold text-xs transition-colors"
                 >
                   <Home className="w-4 h-4 text-charcoal-light" />
                   <span>Buka Website Publik</span>
-                </button>
+                </a>
 
                 {/* 2. Install Aplikasi Admin PWA */}
                 <button

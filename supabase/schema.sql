@@ -929,3 +929,32 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.admin_manage_tiktok TO anon, authenticated;
+
+-- ====================================================================
+-- REALTIME SUBSCRIPTION PUBLICATION
+-- ====================================================================
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        BEGIN
+            ALTER PUBLICATION supabase_realtime ADD TABLE public.clinic_settings;
+        EXCEPTION WHEN duplicate_object THEN
+            NULL;
+        END;
+        BEGIN
+            ALTER PUBLICATION supabase_realtime ADD TABLE public.services;
+        EXCEPTION WHEN duplicate_object THEN
+            NULL;
+        END;
+        BEGIN
+            ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;
+        EXCEPTION WHEN duplicate_object THEN
+            NULL;
+        END;
+        BEGIN
+            ALTER PUBLICATION supabase_realtime ADD TABLE public.blocked_slots;
+        EXCEPTION WHEN duplicate_object THEN
+            NULL;
+        END;
+    END IF;
+END $$;
