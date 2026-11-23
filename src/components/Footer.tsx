@@ -42,11 +42,11 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Brand Info */}
           <div className="lg:col-span-4 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-white p-1 shadow-md border-2 border-accent/50 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-white p-0.5 shadow-md border-2 border-accent/50 flex items-center justify-center">
                 <img
                   src="/logo.png"
                   alt="Logo Indah Mom Baby Spa Comal"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full rounded-full object-cover"
                 />
               </div>
               <div>

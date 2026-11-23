@@ -163,8 +163,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <Menu className="w-6 h-6" />
               </button>
 
-              <div className="w-10 h-10 rounded-full bg-cream p-1 border border-accent/40 flex items-center justify-center shrink-0">
-                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-cream p-0.5 border border-accent/40 flex items-center justify-center shrink-0">
+                <img src="/logo.png" alt="Logo" className="w-full h-full rounded-full object-cover" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -459,8 +459,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* Header Drawer */}
             <div className="p-4 bg-gradient-to-b from-primary/5 via-cream to-white border-b border-purple-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-white p-0.5 shadow-sm border border-accent/40 shrink-0 flex items-center justify-center">
-                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-white p-0.5 shadow-sm border border-accent/40 shrink-0 flex items-center justify-center">
+                  <img src="/logo.png" alt="Logo" className="w-full h-full rounded-full object-cover" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">

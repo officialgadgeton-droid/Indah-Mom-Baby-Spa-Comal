@@ -130,8 +130,8 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
                   {/* Floating Overlay Card on Map */}
                   <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-lg border border-primary/15 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+                        <img src="/logo.png" alt="Logo" className="w-full h-full rounded-full object-cover" />
                       </div>
                       <div>
                         <h5 className="font-bold text-xs text-primary leading-none">

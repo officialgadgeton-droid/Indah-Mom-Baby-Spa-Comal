@@ -232,8 +232,8 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ mode, onSuccess, onBackT
       >
         {/* Logo and Title */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 rounded-full bg-cream mx-auto p-1 border-2 border-accent/40 shadow-md flex items-center justify-center mb-3">
-            <img src="/logo.png" alt="Logo Indah Mom & Baby Spa" className="w-full h-full object-contain" />
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-cream mx-auto p-0.5 border-2 border-accent/40 shadow-md flex items-center justify-center mb-3">
+            <img src="/logo.png" alt="Logo Indah Mom & Baby Spa" className="w-full h-full rounded-full object-cover" />
           </div>
           <span className="text-[11px] font-bold text-accent uppercase tracking-widest bg-accent/15 px-3 py-1 rounded-full">
             Area Khusus Bidan

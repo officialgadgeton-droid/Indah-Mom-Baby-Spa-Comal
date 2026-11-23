@@ -159,11 +159,11 @@ export const Hero: React.FC<HeroProps> = ({ onBookClick, whatsappNumber = '62878
                 {/* Brand Showcase Area */}
                 <div className="relative rounded-2xl bg-gradient-to-br from-[#F5E8FB] to-[#FDFBF7] p-3.5 sm:p-4 text-center border border-primary/10">
                   <div className="flex items-center justify-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-white shadow-sm p-1 border-2 border-accent/40 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-sm p-0.5 border-2 border-accent/40 flex items-center justify-center shrink-0">
                       <img
                         src="/logo.png"
                         alt="Logo Indah Mom & Baby Spa"
-                        className="w-full h-full object-contain"
+                        className="w-full h-full rounded-full object-cover"
                       />
                     </div>
                     <div className="text-left">

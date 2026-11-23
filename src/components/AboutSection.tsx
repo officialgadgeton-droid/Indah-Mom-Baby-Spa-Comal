@@ -42,7 +42,7 @@ export const AboutSection: React.FC = () => {
                   <img
                     src="/logo.png"
                     alt="Profil Bidan Indah Mom Baby Spa"
-                    className="w-full h-full object-contain bg-white rounded-full p-2"
+                    className="w-full h-full rounded-full object-cover bg-white"
                   />
                 </div>
 
