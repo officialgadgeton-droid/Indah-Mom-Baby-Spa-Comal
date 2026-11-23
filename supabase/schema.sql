@@ -14,12 +14,20 @@ CREATE TABLE IF NOT EXISTS public.services (
     duration_minutes INT NOT NULL DEFAULT 45,
     price NUMERIC(12,2) DEFAULT 0,
     target_age VARCHAR(100),
+    age_range VARCHAR(100),
+    sort_order INT NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
+-- Idempotent column migrations for existing databases
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS target_age VARCHAR(100);
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS age_range VARCHAR(100);
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0;
+
 CREATE INDEX IF NOT EXISTS idx_services_category ON public.services(category);
 CREATE INDEX IF NOT EXISTS idx_services_active ON public.services(is_active);
+CREATE INDEX IF NOT EXISTS idx_services_sort_order ON public.services(sort_order);
 
 -- 2. TABEL RESERVASI (BOOKINGS)
 CREATE TABLE IF NOT EXISTS public.bookings (
@@ -92,25 +100,25 @@ CREATE TABLE IF NOT EXISTS public.clinic_settings (
 -- Bersihkan data lama jika ada
 DELETE FROM public.services;
 
-INSERT INTO public.services (category, name, description, duration_minutes, price, target_age, is_active)
+INSERT INTO public.services (category, name, description, duration_minutes, price, target_age, age_range, sort_order, is_active)
 VALUES
     -- Kategori 1: Baby & Kids Treatment
-    ('Baby & Kids Treatment', 'Pijat Bayi Sehat', 'Pijat lembut menyeluruh untuk relaksasi, melancarkan peredaran darah, dan meningkatkan kualitas tidur bayi.', 40, 0, '0 - 24 Bulan', true),
-    ('Baby & Kids Treatment', 'Baby Spa (Gymball, Swim, Massage)', 'Rangkaian stimulasi motorik dengan gymball, berenang air hangat dengan pelampung aman, dan pijat relaksasi.', 50, 0, '1 - 24 Bulan', true),
-    ('Baby & Kids Treatment', 'Pijat Terapi (Bapil, Kolik, Diare, Sembelit, Nafsu Makan)', 'Pijat pediatrik khusus untuk membantu meredakan keluhan batuk pilek, kembung/kolik, gangguan pencernaan, serta meningkatkan nafsu makan anak.', 45, 0, '0 - 5 Tahun', true),
-    ('Baby & Kids Treatment', 'Perawatan Newborn (Bayi Baru Lahir)', 'Perawatan lembut khusus bayi baru lahir meliputi memandikan, perawatan tali pusat, dan pijat ringan yang aman.', 45, 0, '0 - 40 Hari', true),
-    ('Baby & Kids Treatment', 'Tindik Steril (Minim Nyeri Tanpa Darah)', 'Layanan tindik telinga higienis menggunakan alat steril sekali pakai yang minim nyeri dan tanpa pendarahan.', 25, 0, 'Bayi & Anak', true),
-    ('Baby & Kids Treatment', 'Cukur Gundul', 'Cukur rambut bayi bersih dan higienis oleh Bidan dengan peralatan steril serta penuh ketelitian.', 30, 0, '0 - 12 Bulan', true),
+    ('Baby & Kids Treatment', 'Pijat Bayi Sehat', 'Pijat lembut menyeluruh untuk relaksasi, melancarkan peredaran darah, dan meningkatkan kualitas tidur bayi.', 40, 0, '0 - 24 Bulan', '0 - 24 Bulan', 1, true),
+    ('Baby & Kids Treatment', 'Baby Spa (Gymball, Swim, Massage)', 'Rangkaian stimulasi motorik dengan gymball, berenang air hangat dengan pelampung aman, dan pijat relaksasi.', 50, 0, '1 - 24 Bulan', '1 - 24 Bulan', 2, true),
+    ('Baby & Kids Treatment', 'Pijat Terapi (Bapil, Kolik, Diare, Sembelit, Nafsu Makan)', 'Pijat pediatrik khusus untuk membantu meredakan keluhan batuk pilek, kembung/kolik, gangguan pencernaan, serta meningkatkan nafsu makan anak.', 45, 0, '0 - 5 Tahun', '0 - 5 Tahun', 3, true),
+    ('Baby & Kids Treatment', 'Perawatan Newborn (Bayi Baru Lahir)', 'Perawatan lembut khusus bayi baru lahir meliputi memandikan, perawatan tali pusat, dan pijat ringan yang aman.', 45, 0, '0 - 40 Hari', '0 - 40 Hari', 4, true),
+    ('Baby & Kids Treatment', 'Tindik Steril (Minim Nyeri Tanpa Darah)', 'Layanan tindik telinga higienis menggunakan alat steril sekali pakai yang minim nyeri dan tanpa pendarahan.', 25, 0, 'Bayi & Anak', 'Bayi & Anak', 5, true),
+    ('Baby & Kids Treatment', 'Cukur Gundul', 'Cukur rambut bayi bersih dan higienis oleh Bidan dengan peralatan steril serta penuh ketelitian.', 30, 0, '0 - 12 Bulan', '0 - 12 Bulan', 6, true),
 
     -- Kategori 2: Terapi & Paket Spesial
-    ('Terapi & Paket Spesial', 'Paket Bapil (Sinar, Massage, Uap)', 'Paket perawatan lengkap untuk melegakan pernapasan Si Kecil saat batuk pilek dengan terapi sinar inframerah, pijat terapi, dan uap/nebulizer.', 60, 0, 'Bayi & Anak', true),
-    ('Terapi & Paket Spesial', 'Nebulizer / Uap', 'Terapi inhalasi uap untuk membantu mengencerkan dahak dan melegakan saluran pernapasan bayi maupun anak.', 30, 0, 'Semua Usia Anak', true),
-    ('Terapi & Paket Spesial', 'Sinar Inframerah', 'Terapi hangat sinar inframerah untuk membantu melancarkan aliran darah, menghangatkan tubuh, dan meredakan gejala flu/bapil.', 25, 0, 'Semua Usia Anak', true),
-    ('Terapi & Paket Spesial', 'Paket Mom & Baby Post Persalinan', 'Perawatan pemulihan terpadu untuk Bunda pasca melahirkan sekaligus perawatan lembut untuk bayi baru lahir.', 90, 0, 'Bunda Pasca Salin & Bayi', true),
+    ('Terapi & Paket Spesial', 'Paket Bapil (Sinar, Massage, Uap)', 'Paket perawatan lengkap untuk melegakan pernapasan Si Kecil saat batuk pilek dengan terapi sinar inframerah, pijat terapi, dan uap/nebulizer.', 60, 0, 'Bayi & Anak', 'Bayi & Anak', 7, true),
+    ('Terapi & Paket Spesial', 'Nebulizer / Uap', 'Terapi inhalasi uap untuk membantu mengencerkan dahak dan melegakan saluran pernapasan bayi maupun anak.', 30, 0, 'Semua Usia Anak', 'Semua Usia Anak', 8, true),
+    ('Terapi & Paket Spesial', 'Sinar Inframerah', 'Terapi hangat sinar inframerah untuk membantu melancarkan aliran darah, menghangatkan tubuh, dan meredakan gejala flu/bapil.', 25, 0, 'Semua Usia Anak', 'Semua Usia Anak', 9, true),
+    ('Terapi & Paket Spesial', 'Paket Mom & Baby Post Persalinan', 'Perawatan pemulihan terpadu untuk Bunda pasca melahirkan sekaligus perawatan lembut untuk bayi baru lahir.', 90, 0, 'Bunda Pasca Salin & Bayi', 'Bunda Pasca Salin & Bayi', 10, true),
 
     -- Kategori 3: Mom Treatment
-    ('Mom Treatment', 'Mom Treatment (Pijat Hamil, Nifas, Laktasi, Oksitosin)', 'Rangkaian pijat khusus ibu: pijat ibu hamil untuk meredakan pegal, pijat nifas pemulihan pasca bersalin, serta pijat laktasi & oksitosin untuk melancarkan ASI.', 60, 0, 'Ibu Hamil, Nifas & Menyusui', true),
-    ('Mom Treatment', 'Facial, Totok Wajah & Masker', 'Perawatan relaksasi wajah untuk menyegarkan kulit, melancarkan peredaran darah area wajah, dan mengurangi kelelahan Bunda.', 45, 0, 'Bunda', true);
+    ('Mom Treatment', 'Mom Treatment (Pijat Hamil, Nifas, Laktasi, Oksitosin)', 'Rangkaian pijat khusus ibu: pijat ibu hamil untuk meredakan pegal, pijat nifas pemulihan pasca bersalin, serta pijat laktasi & oksitosin untuk melancarkan ASI.', 60, 0, 'Ibu Hamil, Nifas & Menyusui', 'Ibu Hamil, Nifas & Menyusui', 11, true),
+    ('Mom Treatment', 'Facial, Totok Wajah & Masker', 'Perawatan relaksasi wajah untuk menyegarkan kulit, melancarkan peredaran darah area wajah, dan mengurangi kelelahan Bunda.', 45, 0, 'Bunda', 'Bunda', 12, true);
 
 -- Data Pengaturan Klinik Awal
 INSERT INTO public.app_settings (key, value)
@@ -140,11 +148,12 @@ ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clinic_settings ENABLE ROW LEVEL SECURITY;
 
--- 1. Services: Publik bisa melihat semua layanan yang aktif
+-- 1. Services: Publik dan admin bisa melihat daftar katalog layanan
 DROP POLICY IF EXISTS "Public can view active services" ON public.services;
-CREATE POLICY "Public can view active services"
+DROP POLICY IF EXISTS "Public can view all services" ON public.services;
+CREATE POLICY "Public can view all services"
     ON public.services FOR SELECT
-    USING (is_active = true);
+    USING (true);
 
 DROP POLICY IF EXISTS "Authenticated users can manage services" ON public.services;
 CREATE POLICY "Authenticated users can manage services"
@@ -441,6 +450,9 @@ END;
 $$;
 
 -- 6. admin_manage_service: Tambah/Edit/Hapus Layanan
+DROP FUNCTION IF EXISTS public.admin_manage_service(text, text, uuid, text, text, text, int, numeric, text, boolean);
+DROP FUNCTION IF EXISTS public.admin_manage_service(text, text, uuid, text, text, text, int, text, boolean, int);
+
 CREATE OR REPLACE FUNCTION public.admin_manage_service(
     pin_input text,
     p_action text, -- 'create', 'update', 'delete', 'toggle_active'
@@ -449,44 +461,69 @@ CREATE OR REPLACE FUNCTION public.admin_manage_service(
     p_name text DEFAULT NULL,
     p_description text DEFAULT NULL,
     p_duration_minutes int DEFAULT 45,
-    p_price numeric DEFAULT 0,
-    p_target_age text DEFAULT NULL,
-    p_is_active boolean DEFAULT true
+    p_age_range text DEFAULT NULL,
+    p_is_active boolean DEFAULT true,
+    p_sort_order int DEFAULT 0
 )
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+    v_id uuid;
+    v_target_age text;
 BEGIN
     IF NOT public.verify_admin_pin(pin_input) THEN
         RAISE EXCEPTION 'Akses ditolak: PIN Admin tidak valid!';
     END IF;
 
+    v_target_age := p_age_range;
+
     IF p_action = 'create' THEN
-        INSERT INTO public.services (category, name, description, duration_minutes, price, target_age, is_active)
-        VALUES (p_category, p_name, p_description, p_duration_minutes, COALESCE(p_price, 0), p_target_age, p_is_active);
-        RETURN jsonb_build_object('success', true, 'message', 'Layanan berhasil ditambahkan');
+        INSERT INTO public.services (category, name, description, duration_minutes, price, target_age, age_range, is_active, sort_order)
+        VALUES (p_category, p_name, p_description, COALESCE(p_duration_minutes, 45), 0, v_target_age, v_target_age, COALESCE(p_is_active, true), COALESCE(p_sort_order, 0))
+        RETURNING id INTO v_id;
+        RETURN jsonb_build_object('success', true, 'message', 'Layanan berhasil ditambahkan', 'id', v_id);
+
     ELSIF p_action = 'update' THEN
+        IF p_id IS NULL THEN
+            RAISE EXCEPTION 'ID layanan wajib disertakan untuk aksi update';
+        END IF;
+
         UPDATE public.services
         SET category = COALESCE(p_category, category),
             name = COALESCE(p_name, name),
             description = COALESCE(p_description, description),
             duration_minutes = COALESCE(p_duration_minutes, duration_minutes),
-            price = COALESCE(p_price, price, 0),
-            target_age = COALESCE(p_target_age, target_age),
-            is_active = COALESCE(p_is_active, is_active)
+            target_age = COALESCE(v_target_age, target_age),
+            age_range = COALESCE(v_target_age, age_range, target_age),
+            is_active = COALESCE(p_is_active, is_active),
+            sort_order = COALESCE(p_sort_order, sort_order)
         WHERE id = p_id;
-        RETURN jsonb_build_object('success', true, 'message', 'Layanan berhasil diupdate');
+
+        RETURN jsonb_build_object('success', true, 'message', 'Layanan berhasil diupdate', 'id', p_id);
+
     ELSIF p_action = 'toggle_active' THEN
+        IF p_id IS NULL THEN
+            RAISE EXCEPTION 'ID layanan wajib disertakan untuk toggle_active';
+        END IF;
+
         UPDATE public.services
         SET is_active = NOT is_active
         WHERE id = p_id;
-        RETURN jsonb_build_object('success', true, 'message', 'Status layanan berhasil diubah');
+
+        RETURN jsonb_build_object('success', true, 'message', 'Status layanan berhasil diubah', 'id', p_id);
+
     ELSIF p_action = 'delete' THEN
+        IF p_id IS NULL THEN
+            RAISE EXCEPTION 'ID layanan wajib disertakan untuk delete';
+        END IF;
+
         DELETE FROM public.services WHERE id = p_id;
-        RETURN jsonb_build_object('success', true, 'message', 'Layanan berhasil dihapus');
+        RETURN jsonb_build_object('success', true, 'message', 'Layanan berhasil dihapus', 'id', p_id);
+
     ELSE
-        RAISE EXCEPTION 'Aksi tidak dikenal';
+        RAISE EXCEPTION 'Aksi tidak dikenal: %', p_action;
     END IF;
 END;
 $$;
@@ -668,7 +705,7 @@ GRANT EXECUTE ON FUNCTION public.verify_admin_pin(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_admin_bookings(text, date, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.update_booking_status(text, uuid, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_create_manual_booking(text, text, uuid, text, numeric, date, text, text, text, text, text, text, text, text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.admin_manage_service(text, text, uuid, text, text, text, int, numeric, text, boolean) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_manage_service(text, text, uuid, text, text, text, int, text, boolean, int) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_manage_blocked_slot(text, text, uuid, date, text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_update_setting(text, text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_manage_testimonial(text, text, uuid, text, text, boolean) TO anon, authenticated;

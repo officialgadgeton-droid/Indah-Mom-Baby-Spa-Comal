@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Service, AppSettings } from '../types';
-import { fetchActiveServices, getLocalSettings } from '../lib/supabase';
+import { fetchActiveServices, getLocalSettings, supabase } from '../lib/supabase';
 import { Navbar } from './Navbar';
 import { Hero } from './Hero';
 import { ServicesSection } from './ServicesSection';
@@ -21,10 +21,40 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
   const [settings, setSettings] = useState<AppSettings>(() => getLocalSettings());
 
   useEffect(() => {
-    fetchActiveServices().then(data => {
-      setServices(data);
-    });
+    const loadServices = () => {
+      fetchActiveServices().then(data => {
+        if (data && data.length > 0) setServices(data);
+      });
+    };
+
+    loadServices();
     setSettings(getLocalSettings());
+
+    const handleUpdate = () => loadServices();
+    window.addEventListener('indah_spa_services_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    let channel: any = null;
+    if (supabase) {
+      channel = supabase
+        .channel('public_view_services_realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'services' },
+          () => {
+            loadServices();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      window.removeEventListener('indah_spa_services_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   const handleSelectServiceFromCatalog = (service: Service) => {

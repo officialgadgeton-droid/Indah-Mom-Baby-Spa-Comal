@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Service, ServiceCategory } from '../../types';
 import {
-  fetchAllServicesAdmin,
+  fetchAllServices,
   saveService,
   toggleServiceStatus,
   deleteService,
+  isValidUuid,
 } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
-import { Plus, Edit2, Trash2, Check, X, Clock, Users, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Clock, Users, RefreshCw, ArrowUpDown } from 'lucide-react';
 
 interface ServicesTabProps {
   adminPin: string;
@@ -29,12 +30,24 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
   const [description, setDescription] = useState<string>('');
   const [duration, setDuration] = useState<number>(45);
   const [targetAge, setTargetAge] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<number>(0);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Dapatkan PIN otorisasi admin dari sessionStorage atau props
+  const getEffectivePin = (): string => {
+    if (typeof window !== 'undefined') {
+      const sessionPin =
+        sessionStorage.getItem('indah_spa_session_pin') ||
+        sessionStorage.getItem('imb_admin_pin');
+      if (sessionPin) return sessionPin;
+    }
+    return adminPin || '';
+  };
 
   const loadServices = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchAllServicesAdmin();
+      const data = await fetchAllServices();
       setServices(data);
     } catch (e) {
       console.error(e);
@@ -55,6 +68,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
     setDescription('');
     setDuration(45);
     setTargetAge('');
+    setSortOrder(services.length + 1);
     setIsModalOpen(true);
   };
 
@@ -64,7 +78,8 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
     setName(srv.name);
     setDescription(srv.description);
     setDuration(srv.duration_minutes || 45);
-    setTargetAge(srv.target_age || '');
+    setTargetAge(srv.target_age || srv.age_range || '');
+    setSortOrder(srv.sort_order ?? 0);
     setIsModalOpen(true);
   };
 
@@ -72,6 +87,12 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
     e.preventDefault();
     if (!name.trim()) {
       warning('Nama layanan treatment wajib diisi.');
+      return;
+    }
+
+    const pin = getEffectivePin();
+    if (!pin) {
+      error('Sesi admin tidak ditemukan. Silakan masukkan PIN kembali.');
       return;
     }
 
@@ -88,50 +109,71 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
         duration_minutes: Number(duration),
         price: 0,
         target_age: targetAge.trim(),
+        age_range: targetAge.trim(),
+        sort_order: Number(sortOrder) || 0,
         is_active: editingService ? editingService.is_active : true,
       };
 
-      const ok = await saveService(adminPin, payload);
-      if (ok) {
-        success(editingService ? 'Layanan berhasil diupdate!' : 'Layanan baru berhasil ditambahkan!');
+      const result = await saveService(pin, payload);
+
+      if (result.success) {
+        const isTrueUpdate = editingService && isValidUuid(editingService.id);
+        success(isTrueUpdate ? 'Layanan berhasil diupdate!' : 'Layanan baru berhasil ditambahkan!');
         setIsModalOpen(false);
-        loadServices();
+        await loadServices();
       } else {
-        error('Gagal menyimpan layanan.');
+        // Jangan tampilkan toast sukses jika RPC error atau ID bukan UUID valid
+        error(result.error || 'Gagal menyimpan layanan ke Supabase.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      error('Terjadi kesalahan saat menyimpan layanan.');
+      error(e?.message || 'Terjadi kesalahan saat menyimpan layanan.');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleToggle = async (id: string) => {
+    const pin = getEffectivePin();
+    if (!pin) {
+      error('Sesi admin tidak ditemukan. Silakan masukkan PIN kembali.');
+      return;
+    }
+
     try {
-      const ok = await toggleServiceStatus(adminPin, id);
-      if (ok) {
+      const result = await toggleServiceStatus(pin, id);
+      if (result.success) {
         success('Status aktif layanan berhasil diubah.');
-        loadServices();
+        await loadServices();
+      } else {
+        error(result.error || 'Gagal mengubah status layanan.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      error('Gagal mengubah status layanan.');
+      error(e?.message || 'Gagal mengubah status layanan.');
     }
   };
 
   const handleDelete = async (id: string, srvName: string) => {
     if (!confirm(`Hapus layanan "${srvName}" secara permanen?`)) return;
 
+    const pin = getEffectivePin();
+    if (!pin) {
+      error('Sesi admin tidak ditemukan. Silakan masukkan PIN kembali.');
+      return;
+    }
+
     try {
-      const ok = await deleteService(adminPin, id);
-      if (ok) {
+      const result = await deleteService(pin, id);
+      if (result.success) {
         success(`Layanan "${srvName}" berhasil dihapus.`);
-        loadServices();
+        await loadServices();
+      } else {
+        error(result.error || 'Gagal menghapus layanan.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      error('Gagal menghapus layanan.');
+      error(e?.message || 'Gagal menghapus layanan.');
     }
   };
 
@@ -191,6 +233,10 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
                     {srv.category}
                   </span>
+                  <span className="text-[10px] font-semibold text-charcoal-light bg-slate-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <ArrowUpDown className="w-3 h-3 text-accent" />
+                    Urutan #{srv.sort_order ?? 0}
+                  </span>
                 </div>
 
                 <h4 className="font-serif font-bold text-base text-primary mb-1">
@@ -210,7 +256,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5 text-primary" />
-                    {srv.target_age || '-'}
+                    {srv.target_age || srv.age_range || '-'}
                   </span>
                 </div>
 
@@ -295,10 +341,10 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2.5">
                 <div>
                   <label className="block text-xs font-bold text-primary mb-1">
-                    Estimasi Durasi (Menit) *
+                    Durasi (Mnt) *
                   </label>
                   <input
                     type="number"
@@ -313,13 +359,28 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({ adminPin }) => {
 
                 <div>
                   <label className="block text-xs font-bold text-primary mb-1">
-                    Target Usia / Sasaran
+                    Sasaran Usia
                   </label>
                   <input
                     type="text"
-                    placeholder="Contoh: 0 - 24 Bulan"
+                    placeholder="0 - 24 Bulan"
                     value={targetAge}
                     onChange={e => setTargetAge(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-primary mb-1">
+                    Urutan
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    placeholder="1"
+                    value={sortOrder}
+                    onChange={e => setSortOrder(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
                   />
                 </div>

@@ -1,19 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Service, ServiceCategory } from '../types';
 import { Clock, Users, ArrowRight, Baby, Sparkles, Heart } from 'lucide-react';
 import { RevealOnScroll } from './RevealOnScroll';
 import { SpaBubbles } from './SpaBubbles';
+import { fetchActiveServices, supabase } from '../lib/supabase';
 
 interface ServicesSectionProps {
-  services: Service[];
+  services?: Service[];
   onSelectService: (service: Service) => void;
 }
 
 export const ServicesSection: React.FC<ServicesSectionProps> = ({
-  services,
+  services = [],
   onSelectService,
 }) => {
   const [activeCategory, setActiveCategory] = useState<ServiceCategory>('Baby & Kids Treatment');
+  const [activeServicesList, setActiveServicesList] = useState<Service[]>(services);
+
+  const reloadActiveServices = useCallback(async () => {
+    try {
+      const data = await fetchActiveServices();
+      if (data && data.length > 0) {
+        setActiveServicesList(data);
+      }
+    } catch (err) {
+      console.warn('Gagal memuat layanan aktif di ServicesSection:', err);
+    }
+  }, []);
+
+  // Sinkronisasi saat props services dari induk berubah
+  useEffect(() => {
+    if (services && services.length > 0) {
+      setActiveServicesList(services);
+    }
+  }, [services]);
+
+  // Sinkronisasi real-time langsung ke tabel public.services Supabase
+  useEffect(() => {
+    reloadActiveServices();
+
+    // Event listener lokal (untuk preview dan tab yang sama)
+    const handleLocalUpdate = () => reloadActiveServices();
+    window.addEventListener('indah_spa_services_updated', handleLocalUpdate);
+    window.addEventListener('storage', handleLocalUpdate);
+
+    // Supabase Realtime Postgres Changes
+    let channel: any = null;
+    if (supabase) {
+      channel = supabase
+        .channel('public_services_section_realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'services' },
+          () => {
+            reloadActiveServices();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      window.removeEventListener('indah_spa_services_updated', handleLocalUpdate);
+      window.removeEventListener('storage', handleLocalUpdate);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [reloadActiveServices]);
 
   const categories: { key: ServiceCategory; label: string; icon: React.ReactNode; desc: string }[] = [
     {
@@ -36,7 +89,9 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
     },
   ];
 
-  const filteredServices = services.filter(s => s.category === activeCategory && s.is_active);
+  const filteredServices = activeServicesList
+    .filter(s => s.category === activeCategory && s.is_active)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   return (
     <section id="layanan" className="py-20 bg-white relative overflow-hidden">
@@ -139,10 +194,10 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
                           <span className="font-semibold">{service.duration_minutes} Menit</span>
                         </div>
                       ) : null}
-                      {service.target_age ? (
+                      {service.target_age || service.age_range ? (
                         <div className="flex items-center gap-1.5 bg-cream px-2.5 py-1 rounded-lg">
                           <Users className="w-3.5 h-3.5 text-primary" />
-                          <span>{service.target_age}</span>
+                          <span>{service.target_age || service.age_range}</span>
                         </div>
                       ) : null}
                     </div>

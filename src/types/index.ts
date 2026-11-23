@@ -15,6 +15,8 @@ export interface Service {
   duration_minutes?: number;
   price?: number;
   target_age?: string;
+  age_range?: string;
+  sort_order?: number;
   is_active: boolean;
   created_at?: string;
 }

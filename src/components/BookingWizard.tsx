@@ -9,6 +9,8 @@ import { OPERATING_SLOTS, TIME_SESSION_OPTIONS } from '../data/initialServices';
 import {
   fetchBookedSlots,
   createBooking,
+  fetchActiveServices,
+  supabase,
 } from '../lib/supabase';
 import { useToast } from '../context/ToastContext';
 import {
@@ -76,6 +78,56 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
   // Success Modal
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
+  const [servicesList, setServicesList] = useState<Service[]>(services);
+
+  // Sinkronisasi saat props services berubah
+  useEffect(() => {
+    if (services && services.length > 0) {
+      setServicesList(services);
+    }
+  }, [services]);
+
+  // Sinkronisasi Real-Time layanan langsung dari tabel public.services Supabase
+  useEffect(() => {
+    const reloadServices = async () => {
+      try {
+        const data = await fetchActiveServices();
+        if (data && data.length > 0) {
+          setServicesList(data);
+        }
+      } catch (err) {
+        console.warn('Gagal memuat layanan aktif di BookingWizard:', err);
+      }
+    };
+
+    reloadServices();
+
+    const handleLocalUpdate = () => reloadServices();
+    window.addEventListener('indah_spa_services_updated', handleLocalUpdate);
+    window.addEventListener('storage', handleLocalUpdate);
+
+    let channel: any = null;
+    if (supabase) {
+      channel = supabase
+        .channel('public_services_wizard_realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'services' },
+          () => {
+            reloadServices();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      window.removeEventListener('indah_spa_services_updated', handleLocalUpdate);
+      window.removeEventListener('storage', handleLocalUpdate);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, []);
 
   // Load preset service when clicked from catalog
   useEffect(() => {
@@ -146,7 +198,9 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
     };
   }, [bookingDate, selectedTime]);
 
-  const activeServices = services.filter(s => s.is_active);
+  const activeServices = servicesList
+    .filter(s => s.is_active)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const selectedService = activeServices.find(s => s.id === selectedServiceId) || activeServices[0];
 
   // Helper check if time slot is locked
@@ -447,8 +501,8 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
                             {srv.duration_minutes ? (
                               <span>Durasi: {srv.duration_minutes} Menit</span>
                             ) : null}
-                            {srv.target_age ? (
-                              <span>Sasaran: {srv.target_age}</span>
+                            {srv.target_age || srv.age_range ? (
+                              <span>Sasaran: {srv.target_age || srv.age_range}</span>
                             ) : null}
                           </div>
                         </div>

@@ -10,6 +10,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 40,
     price: 0,
     target_age: '0 - 24 Bulan',
+    age_range: '0 - 24 Bulan',
+    sort_order: 1,
     is_active: true,
   },
   {
@@ -20,6 +22,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 50,
     price: 0,
     target_age: '1 - 24 Bulan',
+    age_range: '1 - 24 Bulan',
+    sort_order: 2,
     is_active: true,
   },
   {
@@ -30,6 +34,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 45,
     price: 0,
     target_age: '0 - 5 Tahun',
+    age_range: '0 - 5 Tahun',
+    sort_order: 3,
     is_active: true,
   },
   {
@@ -40,6 +46,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 45,
     price: 0,
     target_age: '0 - 40 Hari',
+    age_range: '0 - 40 Hari',
+    sort_order: 4,
     is_active: true,
   },
   {
@@ -50,6 +58,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 25,
     price: 0,
     target_age: 'Bayi & Anak',
+    age_range: 'Bayi & Anak',
+    sort_order: 5,
     is_active: true,
   },
   {
@@ -60,6 +70,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 30,
     price: 0,
     target_age: '0 - 12 Bulan',
+    age_range: '0 - 12 Bulan',
+    sort_order: 6,
     is_active: true,
   },
 
@@ -72,6 +84,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 60,
     price: 0,
     target_age: 'Bayi & Anak',
+    age_range: 'Bayi & Anak',
+    sort_order: 7,
     is_active: true,
   },
   {
@@ -82,6 +96,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 30,
     price: 0,
     target_age: 'Semua Usia Anak',
+    age_range: 'Semua Usia Anak',
+    sort_order: 8,
     is_active: true,
   },
   {
@@ -92,6 +108,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 25,
     price: 0,
     target_age: 'Semua Usia Anak',
+    age_range: 'Semua Usia Anak',
+    sort_order: 9,
     is_active: true,
   },
   {
@@ -102,6 +120,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 90,
     price: 0,
     target_age: 'Bunda Pasca Salin & Bayi',
+    age_range: 'Bunda Pasca Salin & Bayi',
+    sort_order: 10,
     is_active: true,
   },
 
@@ -114,6 +134,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 60,
     price: 0,
     target_age: 'Ibu Hamil, Nifas & Menyusui',
+    age_range: 'Ibu Hamil, Nifas & Menyusui',
+    sort_order: 11,
     is_active: true,
   },
   {
@@ -124,6 +146,8 @@ export const INITIAL_SERVICES: Service[] = [
     duration_minutes: 45,
     price: 0,
     target_age: 'Bunda',
+    age_range: 'Bunda',
+    sort_order: 12,
     is_active: true,
   },
 ];

@@ -182,6 +182,15 @@ export function getLocalTestimonials(): Testimonial[] {
 // API UNIFIED DATA SERVICES (SUPABASE + FALLBACK)
 // ==========================================
 
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+export const isValidUuid = (val?: string | null): boolean => Boolean(val && UUID_REGEX.test(val));
+
+export function notifyServicesUpdated(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('indah_spa_services_updated'));
+  }
+}
+
 export async function fetchActiveServices(): Promise<Service[]> {
   if (supabase) {
     try {
@@ -189,33 +198,47 @@ export async function fetchActiveServices(): Promise<Service[]> {
         .from('services')
         .select('*')
         .eq('is_active', true)
-        .order('created_at', { ascending: true });
+        .order('sort_order', { ascending: true });
       if (!error && data && data.length > 0) {
-        return data as Service[];
+        return data.map((s: any) => ({
+          ...s,
+          target_age: s.target_age || s.age_range || '',
+          age_range: s.age_range || s.target_age || '',
+          sort_order: s.sort_order ?? 0,
+        })) as Service[];
       }
     } catch (e) {
       console.warn('Gagal fetch services dari Supabase, beralih ke cache lokal:', e);
     }
   }
-  return getLocalServices().filter(s => s.is_active);
+  const local = getLocalServices().filter(s => s.is_active);
+  return [...local].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 }
 
-export async function fetchAllServicesAdmin(): Promise<Service[]> {
+export async function fetchAllServices(): Promise<Service[]> {
   if (supabase) {
     try {
       const { data, error } = await supabase
         .from('services')
         .select('*')
-        .order('category', { ascending: true });
+        .order('sort_order', { ascending: true });
       if (!error && data && data.length > 0) {
-        return data as Service[];
+        return data.map((s: any) => ({
+          ...s,
+          target_age: s.target_age || s.age_range || '',
+          age_range: s.age_range || s.target_age || '',
+          sort_order: s.sort_order ?? 0,
+        })) as Service[];
       }
     } catch (e) {
       console.warn('Gagal fetch all services dari Supabase:', e);
     }
   }
-  return getLocalServices();
+  const local = getLocalServices();
+  return [...local].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 }
+
+export const fetchAllServicesAdmin = fetchAllServices;
 
 export async function fetchBookedSlots(targetDate: string): Promise<{ time: string; reason: string }[]> {
   if (supabase) {
@@ -685,35 +708,106 @@ export async function adminDeleteCustomerBookings(
 export async function saveService(
   pin: string,
   service: Partial<Service> & { name: string; category: Service['category'] }
-): Promise<boolean> {
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  const pinInput =
+    pin ||
+    (typeof window !== 'undefined'
+      ? sessionStorage.getItem('indah_spa_session_pin') ||
+        sessionStorage.getItem('imb_admin_pin') ||
+        ''
+      : '');
+
   if (supabase) {
     try {
-      const isUpdate = Boolean(service.id && !service.id.startsWith('srv-'));
-      const { error } = await supabase.rpc('admin_manage_service', {
-        pin_input: pin,
-        p_action: isUpdate ? 'update' : 'create',
-        p_id: isUpdate ? service.id : null,
+      const isUuid = isValidUuid(service.id);
+      let action: 'create' | 'update' = isUuid ? 'update' : 'create';
+      let serviceId: string | null = isUuid ? service.id! : null;
+
+      // Jika ID ada tapi dummy (bukan format UUID standard), cari UUID-nya di Supabase berdasarkan nama
+      if (service.id && !isUuid) {
+        const { data: existing } = await supabase
+          .from('services')
+          .select('id')
+          .eq('name', service.name)
+          .maybeSingle();
+
+        if (existing && isValidUuid(existing.id)) {
+          action = 'update';
+          serviceId = existing.id;
+        } else {
+          action = 'create';
+          serviceId = null;
+        }
+      }
+
+      const { data, error } = await supabase.rpc('admin_manage_service', {
+        pin_input: pinInput,
+        p_action: action,
+        p_id: serviceId,
         p_category: service.category,
         p_name: service.name,
         p_description: service.description || '',
         p_duration_minutes: service.duration_minutes || 45,
-        p_price: 0,
-        p_target_age: service.target_age || '',
+        p_age_range: service.age_range || service.target_age || '',
         p_is_active: service.is_active ?? true,
+        p_sort_order: service.sort_order ?? 0,
       });
-      if (!error) return true;
-    } catch (e) {
-      console.warn('RPC admin_manage_service error:', e);
+
+      if (error) {
+        console.error('RPC admin_manage_service error:', error);
+        return { success: false, error: error.message || 'Gagal menyimpan layanan ke Supabase.' };
+      }
+
+      const savedId = (data as any)?.id || serviceId || `srv-${Date.now()}`;
+
+      // Update mirror di LocalStorage
+      const list = getLocalServices();
+      const existingIdx = list.findIndex(
+        s => s.id === service.id || s.id === savedId || s.name === service.name
+      );
+      const updatedSrv: Service = {
+        id: savedId,
+        category: service.category,
+        name: service.name,
+        description: service.description || '',
+        duration_minutes: service.duration_minutes || 45,
+        price: 0,
+        target_age: service.target_age || service.age_range || '',
+        age_range: service.age_range || service.target_age || '',
+        sort_order: service.sort_order ?? 0,
+        is_active: service.is_active ?? true,
+      };
+
+      if (existingIdx !== -1) {
+        list[existingIdx] = updatedSrv;
+      } else {
+        list.push(updatedSrv);
+      }
+      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(list));
+      notifyServicesUpdated();
+
+      return { success: true, id: savedId };
+    } catch (e: any) {
+      console.error('RPC admin_manage_service exception:', e);
+      return { success: false, error: e?.message || 'Terjadi kesalahan sistem saat memanggil RPC layanan.' };
     }
   }
 
+  // Fallback Local Storage Mode
   const list = getLocalServices();
   if (service.id) {
     const idx = list.findIndex(s => s.id === service.id);
     if (idx !== -1) {
-      list[idx] = { ...list[idx], ...service } as Service;
+      list[idx] = {
+        ...list[idx],
+        ...service,
+        target_age: service.target_age || service.age_range || list[idx].target_age,
+        age_range: service.age_range || service.target_age || list[idx].age_range,
+        sort_order: service.sort_order ?? list[idx].sort_order ?? 0,
+      } as Service;
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(list));
-      return true;
+      notifyServicesUpdated();
+      return { success: true, id: service.id };
     }
   }
 
@@ -724,25 +818,84 @@ export async function saveService(
     description: service.description || '',
     duration_minutes: service.duration_minutes || 45,
     price: 0,
-    target_age: service.target_age || '',
+    target_age: service.target_age || service.age_range || '',
+    age_range: service.age_range || service.target_age || '',
+    sort_order: service.sort_order ?? (list.length + 1),
     is_active: service.is_active ?? true,
   };
   list.push(newSrv);
   localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(list));
-  return true;
+  notifyServicesUpdated();
+  return { success: true, id: newSrv.id };
 }
 
-export async function toggleServiceStatus(pin: string, id: string): Promise<boolean> {
+export async function toggleServiceStatus(
+  pin: string,
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  const pinInput =
+    pin ||
+    (typeof window !== 'undefined'
+      ? sessionStorage.getItem('indah_spa_session_pin') ||
+        sessionStorage.getItem('imb_admin_pin') ||
+        ''
+      : '');
+
   if (supabase) {
     try {
+      let targetId: string | null = isValidUuid(id) ? id : null;
+
+      if (!targetId) {
+        const local = getLocalServices().find(s => s.id === id);
+        if (local) {
+          const { data: found } = await supabase
+            .from('services')
+            .select('id')
+            .eq('name', local.name)
+            .maybeSingle();
+          if (found && isValidUuid(found.id)) {
+            targetId = found.id;
+          }
+        }
+      }
+
+      if (!targetId) {
+        return {
+          success: false,
+          error: 'ID layanan bukan UUID valid. Mohon edit atau buat ulang layanan di database Supabase.',
+        };
+      }
+
       const { error } = await supabase.rpc('admin_manage_service', {
-        pin_input: pin,
+        pin_input: pinInput,
         p_action: 'toggle_active',
-        p_id: id,
+        p_id: targetId,
+        p_category: null,
+        p_name: null,
+        p_description: null,
+        p_duration_minutes: null,
+        p_age_range: null,
+        p_is_active: null,
+        p_sort_order: null,
       });
-      if (!error) return true;
-    } catch (e) {
-      console.warn('RPC toggle_active error:', e);
+
+      if (error) {
+        console.error('RPC toggle_active error:', error);
+        return { success: false, error: error.message || 'Gagal mengubah status layanan.' };
+      }
+
+      const list = getLocalServices();
+      const idx = list.findIndex(s => s.id === id || s.id === targetId);
+      if (idx !== -1) {
+        list[idx].is_active = !list[idx].is_active;
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(list));
+      }
+      notifyServicesUpdated();
+
+      return { success: true };
+    } catch (e: any) {
+      console.error('RPC toggle_active exception:', e);
+      return { success: false, error: e?.message || 'Gagal mengubah status layanan.' };
     }
   }
 
@@ -751,29 +904,84 @@ export async function toggleServiceStatus(pin: string, id: string): Promise<bool
   if (idx !== -1) {
     list[idx].is_active = !list[idx].is_active;
     localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(list));
-    return true;
+    notifyServicesUpdated();
+    return { success: true };
   }
-  return false;
+  return { success: false, error: 'Layanan tidak ditemukan di local database.' };
 }
 
-export async function deleteService(pin: string, id: string): Promise<boolean> {
+export async function deleteService(
+  pin: string,
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  const pinInput =
+    pin ||
+    (typeof window !== 'undefined'
+      ? sessionStorage.getItem('indah_spa_session_pin') ||
+        sessionStorage.getItem('imb_admin_pin') ||
+        ''
+      : '');
+
   if (supabase) {
     try {
+      let targetId: string | null = isValidUuid(id) ? id : null;
+
+      if (!targetId) {
+        const local = getLocalServices().find(s => s.id === id);
+        if (local) {
+          const { data: found } = await supabase
+            .from('services')
+            .select('id')
+            .eq('name', local.name)
+            .maybeSingle();
+          if (found && isValidUuid(found.id)) {
+            targetId = found.id;
+          }
+        }
+      }
+
+      if (!targetId) {
+        return {
+          success: false,
+          error: 'ID layanan bukan UUID valid. Mohon pastikan layanan telah tersinkron di Supabase.',
+        };
+      }
+
       const { error } = await supabase.rpc('admin_manage_service', {
-        pin_input: pin,
+        pin_input: pinInput,
         p_action: 'delete',
-        p_id: id,
+        p_id: targetId,
+        p_category: null,
+        p_name: null,
+        p_description: null,
+        p_duration_minutes: null,
+        p_age_range: null,
+        p_is_active: null,
+        p_sort_order: null,
       });
-      if (!error) return true;
-    } catch (e) {
-      console.warn('RPC delete service error:', e);
+
+      if (error) {
+        console.error('RPC delete service error:', error);
+        return { success: false, error: error.message || 'Gagal menghapus layanan dari Supabase.' };
+      }
+
+      const list = getLocalServices();
+      const filtered = list.filter(s => s.id !== id && s.id !== targetId);
+      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(filtered));
+      notifyServicesUpdated();
+
+      return { success: true };
+    } catch (e: any) {
+      console.error('RPC delete service exception:', e);
+      return { success: false, error: e?.message || 'Gagal menghapus layanan.' };
     }
   }
 
   const list = getLocalServices();
   const filtered = list.filter(s => s.id !== id);
   localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(filtered));
-  return true;
+  notifyServicesUpdated();
+  return { success: true };
 }
 
 export async function fetchBlockedSlots(): Promise<BlockedSlot[]> {
