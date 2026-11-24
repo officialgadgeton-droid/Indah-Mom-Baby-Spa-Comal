@@ -184,8 +184,8 @@ export const ClinicAnnouncementsSection: React.FC<ClinicAnnouncementsSectionProp
                   <div className="flex items-center gap-2.5">
                     <span
                       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold ${currentAnnouncement.category === 'health_tip'
-                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                          : 'bg-primary/15 text-primary border border-primary/25'
+                        ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                        : 'bg-primary/15 text-primary border border-primary/25'
                         }`}
                     >
                       {currentAnnouncement.category === 'health_tip' ? (
@@ -275,7 +275,7 @@ export const ClinicAnnouncementsSection: React.FC<ClinicAnnouncementsSectionProp
                         Bidan Dwi Nur Indah Sari
                       </p>
                       <p className="text-[10px] text-charcoal-light">
-                        Praktik Mandiri Bidan & Spa Bayi Comal
+                        Outlet SPA Mom, Baby & Kids
                       </p>
                     </div>
                   </div>

@@ -141,7 +141,7 @@ Halo Bunda *${booking.mom_name}*, alhamdulillah jadwal reservasi Bunda & Si Keci
 ${booking.child_name ? `- *Nama Si Kecil:* ${booking.child_name} ${booking.child_age ? `(${booking.child_age})` : ''}\n` : ''}${booking.address ? `- *Alamat Kunjungan:* ${booking.address}\n` : ''}${booking.notes ? `- *Catatan Khusus:* ${booking.notes}\n` : ''}---------------------------------------
 *TIPS PERSIAPAN SEBELUM PERAWATAN:*
 1. Pastikan Si Kecil dalam kondisi nyaman, sudah cukup istirahat, dan tidak sedang rewel.
-2. Sebelum pijat disarankan Tidak kondisi lapar atau kekenyangan,Beri jeda setelah menyusu atau makan agar bayi nyaman dan tidak muntah.
+2. Disarankan sebelum pijat tidak dalam kondisi lapar atau kekenyangan,Beri jeda setelah menyusu atau makan agar bayi nyaman dan tidak muntah.
 3. Jika Si Kecil mendadak demam atau Bunda ingin menyesuaikan jam, segera kabari kami ya.
 
 Sampai jumpa di waktu perawatan Bunda! Terima kasih banyak sudah mempercayakan perawatan Si Kecil di Indah Mom & Baby Spa Comal ❤️`;
@@ -600,8 +600,8 @@ Jika ada keluhan atau ada hal yang ingin Bunda tanyakan seputar kondisi Si Kecil
                                   type="button"
                                   onClick={() => setAdjustedTimeInput(preset)}
                                   className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all border ${adjustedTimeInput === preset
-                                      ? 'bg-primary text-white border-primary shadow-xs font-bold'
-                                      : 'bg-white hover:bg-cream border-slate-200 text-charcoal'
+                                    ? 'bg-primary text-white border-primary shadow-xs font-bold'
+                                    : 'bg-white hover:bg-cream border-slate-200 text-charcoal'
                                     }`}
                                 >
                                   {preset}

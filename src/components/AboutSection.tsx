@@ -54,7 +54,7 @@ export const AboutSection: React.FC = () => {
                     Bidan Indah & Tim Profesional
                   </h3>
                   <p className="text-xs text-charcoal-light font-medium mt-1">
-                    Praktik Mandiri & Homecare Spesialis Mom & Baby Spa Comal
+                    Homecare Spesialis Mom & Baby Spa Comal
                   </p>
                 </div>
 

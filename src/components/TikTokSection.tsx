@@ -37,7 +37,7 @@ export const TikTokSection: React.FC = () => {
     followers: '10,9 Rb+',
     likes: '58 Rb+',
     url: 'https://www.tiktok.com/@indah_mom.baby_spa_comal',
-    bio: 'Bidan Praktik Mandiri • Spesialis Baby Spa, Pijat Bapil, & Homecare Comal - Pemalang',
+    bio: 'Outlet SPA Mom, Baby & Kids • Spesialis Baby Spa, Pijat Bapil, & Homecare Comal - Pemalang',
   };
 
   const loadVideos = async () => {
