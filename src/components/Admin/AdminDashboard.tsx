@@ -20,6 +20,7 @@ import {
   X,
   Smartphone,
   CheckCircle2,
+  Megaphone,
 } from 'lucide-react';
 import {
   isSupabaseConfigured,
@@ -37,6 +38,7 @@ import { BlockedSlotsTab } from './BlockedSlotsTab';
 import { SettingsTab } from './SettingsTab';
 import { TestimonialsTab } from './TestimonialsTab';
 import { TikTokTab } from './TikTokTab';
+import { AnnouncementsTab } from './AnnouncementsTab';
 import { TikTokIcon } from '../TikTokSection';
 import { AdminMobileBottomNav } from '../MobileBottomNav';
 import { usePwaInstall } from '../../lib/usePwaInstall';
@@ -51,6 +53,7 @@ interface AdminDashboardProps {
 export type AdminTab =
   | 'bookings'
   | 'customers'
+  | 'announcements'
   | 'services'
   | 'testimonials'
   | 'tiktok'
@@ -288,6 +291,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('announcements')}
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-bold border-b-2 whitespace-nowrap transition-all ${
+                activeTab === 'announcements'
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-transparent text-charcoal-light hover:text-primary hover:border-slate-300'
+              }`}
+            >
+              <Megaphone className="w-4 h-4" />
+              <span>Broadcast & Tips</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('services')}
               className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-bold border-b-2 whitespace-nowrap transition-all ${
                 activeTab === 'services'
@@ -490,6 +505,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {activeTab === 'bookings' && <BookingsTab adminPin={activeAdminPin} />}
         {activeTab === 'customers' && <CustomersTab adminPin={activeAdminPin} />}
+        {activeTab === 'announcements' && <AnnouncementsTab adminPin={activeAdminPin} />}
         {activeTab === 'services' && <ServicesTab adminPin={activeAdminPin} />}
         {activeTab === 'testimonials' && <TestimonialsTab adminPin={activeAdminPin} />}
         {activeTab === 'tiktok' && <TikTokTab adminPin={activeAdminPin} />}
@@ -597,6 +613,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 >
                   <Users className="w-4 h-4 shrink-0" />
                   <span className="flex-1">Data Pelanggan</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectTab('announcements')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-colors ${
+                    activeTab === 'announcements'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-charcoal hover:bg-primary/5 hover:text-primary'
+                  }`}
+                >
+                  <Megaphone className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">Broadcast Info & Tips</span>
                 </button>
 
                 <button

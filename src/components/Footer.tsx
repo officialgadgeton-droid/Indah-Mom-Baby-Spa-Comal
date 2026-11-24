@@ -1,5 +1,6 @@
 import React from 'react';
-import { MapPin, Phone, Heart, Sparkles } from 'lucide-react';
+import { MapPin, Phone, Heart, Sparkles, Smartphone, Download } from 'lucide-react';
+import { ANDROID_APK_URL, useIsAndroidApp } from '../lib/appDetection';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
   <svg
@@ -47,6 +48,7 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   const cleanDigits = whatsappNumber.replace(/[^0-9]/g, '');
   const waLink = cleanDigits.startsWith('0') ? '62' + cleanDigits.slice(1) : cleanDigits;
+  const isInsideApp = useIsAndroidApp();
 
   return (
     <footer className="bg-[#2F0B3D] text-white pt-16 pb-10 border-t border-accent/20">
@@ -106,6 +108,24 @@ export const Footer: React.FC<FooterProps> = ({
                 <TikTokIcon className="w-4 h-4" />
               </a>
             </div>
+
+            {/* Quick Button Download App Android Resmi */}
+            {!isInsideApp && (
+              <div className="pt-2">
+                <a
+                  href={ANDROID_APK_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-accent hover:text-[#2F0B3D] text-white border border-accent/40 transition-all text-xs font-semibold group shadow-xs"
+                >
+                  <Smartphone className="w-4 h-4 text-accent group-hover:text-[#2F0B3D] transition-colors shrink-0" />
+                  <div className="text-left">
+                    <span className="block text-[10px] text-accent group-hover:text-[#2F0B3D] font-medium leading-none">Aplikasi Android Resmi</span>
+                    <span className="block text-xs font-bold leading-tight mt-1">Download App Android (APK 5 MB)</span>
+                  </div>
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Quick Links Treatment (Updated to New 12 Services) */}
@@ -196,7 +216,18 @@ export const Footer: React.FC<FooterProps> = ({
             <span>© {new Date().getFullYear()} Indah Mom & Baby Spa Comal. Hak Cipta Dilindungi.</span>
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            {!isInsideApp && (
+              <a
+                href={ANDROID_APK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-accent transition-colors text-white/70 hover:underline flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5 text-accent" />
+                <span>Download App Android (5 MB)</span>
+              </a>
+            )}
             <span className="flex items-center gap-1 text-white/70">
               <span>Made with</span>
               <Heart className="w-3.5 h-3.5 text-accent fill-accent" />

@@ -15,9 +15,11 @@ import {
   Smartphone,
   CheckCircle2,
   ExternalLink,
+  Download,
 } from 'lucide-react';
 import { ClinicOperationalStatus } from '../types';
 import { usePwaInstall } from '../lib/usePwaInstall';
+import { ANDROID_APK_URL, useIsAndroidApp } from '../lib/appDetection';
 import { PwaInstallModal } from './PwaInstallModal';
 import { TikTokIcon } from './TikTokSection';
 
@@ -51,6 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // PWA Installation Hook
   const { isInstallable, isInstalled, isIos, installApp, showGuideModal, setShowGuideModal } =
     usePwaInstall();
+  const isInsideApp = useIsAndroidApp();
 
   // Dukungan controlled atau uncontrolled drawer state
   const isDrawerOpen =
@@ -628,7 +631,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>TikTok @indah_mom.baby_spa_comal</span>
                 </a>
 
-                {/* 3. Tombol Install PWA ke HP */}
+                {/* 4. Download Aplikasi Android Resmi (APK) */}
+                {!isInsideApp && (
+                  <a
+                    href={ANDROID_APK_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary to-[#4A154B] hover:opacity-95 text-white font-bold text-xs shadow-xs transition-all border border-accent/40"
+                  >
+                    <Download className="w-4 h-4 text-accent" />
+                    <span>Download App Android (APK 5 MB)</span>
+                  </a>
+                )}
+
+                {/* 5. Tombol Install PWA ke HP */}
                 <button
                   onClick={() => {
                     if (isInstalled) {

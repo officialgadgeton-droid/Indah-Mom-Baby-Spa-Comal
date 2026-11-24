@@ -1,0 +1,23 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Tema Utama: Deep Plum & Warm Gold -->
+    <style name="Theme.IndahMomBabySpa" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/deep_plum</item>
+        <item name="colorPrimaryVariant">@color/deep_plum_dark</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        
+        <!-- Secondary accent color -->
+        <item name="colorSecondary">@color/warm_gold</item>
+        <item name="colorSecondaryVariant">@color/warm_gold_dark</item>
+        <item name="colorOnSecondary">@color/deep_plum_dark</item>
+        
+        <!-- Status bar and navigation bar styling -->
+        <item name="android:statusBarColor">@color/deep_plum</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+        <item name="android:navigationBarColor">@color/soft_cream</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+        
+        <!-- Background -->
+        <item name="android:windowBackground">@color/soft_cream</item>
+    </style>
+</resources>

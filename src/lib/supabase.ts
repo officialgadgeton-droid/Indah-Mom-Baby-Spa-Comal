@@ -8,10 +8,13 @@ import {
   TikTokVideo,
   OperationalStatus,
   ClinicOperationalStatus,
+  ClinicAnnouncement,
+  AnnouncementCategory,
 } from '../types';
 import { INITIAL_SERVICES, DEFAULT_SETTINGS } from '../data/initialServices';
 import { INITIAL_TESTIMONIALS } from '../data/initialTestimonials';
 import { INITIAL_TIKTOK_VIDEOS } from '../data/initialTikTokVideos';
+import { INITIAL_ANNOUNCEMENTS } from '../data/initialAnnouncements';
 
 // Cek konfigurasi Supabase dari environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -40,6 +43,7 @@ const STORAGE_KEYS = {
   TESTIMONIALS: 'indah_spa_testimonials',
   TIKTOK_VIDEOS: 'indah_spa_tiktok_videos',
   OPERATIONAL_STATUS: 'indah_spa_operational_status',
+  ANNOUNCEMENTS: 'indah_spa_announcements',
 };
 
 // Inisialisasi local database jika belum ada
@@ -166,6 +170,23 @@ export function getLocalTikTokVideos(): TikTokVideo[] {
     return INITIAL_TIKTOK_VIDEOS;
   } catch {
     return INITIAL_TIKTOK_VIDEOS;
+  }
+}
+
+export function getLocalAnnouncements(): ClinicAnnouncement[] {
+  const data = localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS);
+  if (!data) {
+    localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(INITIAL_ANNOUNCEMENTS));
+    return INITIAL_ANNOUNCEMENTS;
+  }
+  try {
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return INITIAL_ANNOUNCEMENTS;
+  } catch {
+    return INITIAL_ANNOUNCEMENTS;
   }
 }
 
@@ -1779,5 +1800,154 @@ export async function deleteTikTokVideo(pin: string, id: string): Promise<boolea
   window.dispatchEvent(new CustomEvent('indah_spa_tiktok_videos_updated'));
   return true;
 }
+
+// ==========================================
+// CLINIC ANNOUNCEMENTS & HEALTH TIPS (BROADCAST)
+// ==========================================
+
+/**
+ * Mengambil daftar pengumuman & tips kesehatan aktif untuk halaman publik Bunda
+ */
+export async function fetchActiveAnnouncements(): Promise<ClinicAnnouncement[]> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('clinic_announcements')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        return data as ClinicAnnouncement[];
+      }
+    } catch (e) {
+      if (isSupabaseConfigured) {
+        console.warn('Supabase fetchActiveAnnouncements error:', e);
+      }
+    }
+  }
+
+  // Fallback Local Storage
+  const localList = getLocalAnnouncements();
+  return localList.filter((item) => item.is_active);
+}
+
+/**
+ * Mengambil seluruh riwayat pengumuman untuk panel Admin
+ */
+export async function fetchAdminAnnouncements(pin?: string): Promise<ClinicAnnouncement[]> {
+  const effectivePin = pin || getAdminSessionPin();
+
+  if (supabase && effectivePin) {
+    try {
+      const { data, error } = await supabase.rpc('admin_get_announcements', {
+        pin_input: effectivePin,
+      });
+
+      if (!error && data) {
+        return data as ClinicAnnouncement[];
+      }
+    } catch (e) {
+      try {
+        const { data: directData } = await supabase
+          .from('clinic_announcements')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (directData && directData.length > 0) {
+          return directData as ClinicAnnouncement[];
+        }
+      } catch {}
+    }
+  }
+
+  return getLocalAnnouncements();
+}
+
+/**
+ * Mempublikasikan pengumuman atau tips kesehatan baru ke aplikasi publik
+ */
+export async function publishAnnouncement(
+  pin: string,
+  title: string,
+  message: string,
+  category: AnnouncementCategory = 'info'
+): Promise<ClinicAnnouncement> {
+  const effectivePin = pin || getAdminSessionPin();
+  if (!effectivePin) {
+    throw new Error('PIN sesi admin tidak ditemukan. Silakan verifikasi PIN Anda kembali.');
+  }
+
+  let serverId: string | null = null;
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('admin_publish_announcement', {
+        pin_input: effectivePin,
+        p_title: title.trim(),
+        p_message: message.trim(),
+        p_category: category,
+      });
+      if (error) throw error;
+      serverId = data;
+    } catch (e) {
+      if (isSupabaseConfigured) throw e;
+      console.warn('Fallback publishAnnouncement ke LocalStorage:', e);
+    }
+  }
+
+  const list = getLocalAnnouncements();
+  // Jika kategori holiday, nonaktifkan pengumuman libur sebelumnya agar tidak tumpang tindih
+  if (category === 'holiday') {
+    list.forEach((item) => {
+      if (item.category === 'holiday') {
+        item.is_active = false;
+      }
+    });
+  }
+
+  const newAnnouncement: ClinicAnnouncement = {
+    id: serverId || `ann-local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    title: title.trim(),
+    message: message.trim(),
+    category,
+    is_active: true,
+    created_at: new Date().toISOString(),
+  };
+
+  list.unshift(newAnnouncement);
+  localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(list));
+  window.dispatchEvent(new CustomEvent('indah_spa_announcements_updated'));
+  return newAnnouncement;
+}
+
+/**
+ * Menghapus pengumuman berdasarkan ID
+ */
+export async function deleteAnnouncement(pin: string, id: string): Promise<boolean> {
+  const effectivePin = pin || getAdminSessionPin();
+
+  if (supabase) {
+    const isLocalId = id.startsWith('ann-init-') || id.startsWith('ann-local-');
+    if (!isLocalId) {
+      try {
+        const { error } = await supabase.rpc('admin_delete_announcement', {
+          pin_input: effectivePin,
+          p_id: id,
+        });
+        if (error) throw error;
+      } catch (e) {
+        if (isSupabaseConfigured) throw e;
+        console.warn('Fallback deleteAnnouncement ke LocalStorage:', e);
+      }
+    }
+  }
+
+  const list = getLocalAnnouncements();
+  const filtered = list.filter((item) => item.id !== id);
+  localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(filtered));
+  window.dispatchEvent(new CustomEvent('indah_spa_announcements_updated'));
+  return true;
+}
+
 
 

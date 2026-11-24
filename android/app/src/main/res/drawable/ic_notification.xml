@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="#FFFFFF"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Ikon Notifikasi Monokrom Standar Android (Bunga Teratai & Hati) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2C12.5,4 14,7 12,12C10,7 11.5,4 12,2ZM12,12C8,11 6,8 6,6C8,6 10,8 12,12ZM12,12C16,11 18,8 18,6C16,6 14,8 12,12ZM5,14C8,17 16,17 19,14C16,16 8,16 5,14ZM12,18A3,3 0 0,1 9,21A3,3 0 0,1 6.18,19L7.82,19A1.5,1.5 0 0,0 9,20A1.5,1.5 0 0,0 10.5,18.5V18H13.5V18.5A1.5,1.5 0 0,0 15,20A1.5,1.5 0 0,0 16.18,19L17.82,19A3,3 0 0,1 15,21A3,3 0 0,1 12,18Z" />
+</vector>

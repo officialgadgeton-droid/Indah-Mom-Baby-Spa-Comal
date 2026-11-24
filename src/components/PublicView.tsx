@@ -9,6 +9,7 @@ import {
 } from '../lib/supabase';
 import { Navbar } from './Navbar';
 import { Hero } from './Hero';
+import { ClinicAnnouncementsSection } from './ClinicAnnouncementsSection';
 import { ServicesSection } from './ServicesSection';
 import { AboutSection } from './AboutSection';
 import { HowToBookSection } from './HowToBookSection';
@@ -16,6 +17,7 @@ import { BookingWizard } from './BookingWizard';
 import { TestimonialsSection } from './TestimonialsSection';
 import { TikTokSection } from './TikTokSection';
 import { LocationSection } from './LocationSection';
+import { AndroidAppSection } from './AndroidAppSection';
 import { Footer } from './Footer';
 import { PublicMobileBottomNav } from './MobileBottomNav';
 
@@ -170,6 +172,9 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
           hasTopBanner={false}
         />
 
+        {/* Broadcast Info Bidan & Tips Kesehatan */}
+        <ClinicAnnouncementsSection whatsappNumber={settings.whatsapp_number} />
+
         <ServicesSection
           services={services}
           onSelectService={handleSelectServiceFromCatalog}
@@ -197,6 +202,9 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
           whatsappNumber={settings.whatsapp_number}
           operatingHours={settings.operating_hours}
         />
+
+        {/* Promo Download Aplikasi Android Resmi (di atas Footer) */}
+        <AndroidAppSection />
       </main>
 
       <Footer

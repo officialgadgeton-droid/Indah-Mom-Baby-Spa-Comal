@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Palette Indah Mom & Baby Spa Comal -->
+    <color name="deep_plum">#4A154B</color>
+    <color name="deep_plum_dark">#380E39</color>
+    <color name="deep_plum_light">#6A276B</color>
+    
+    <color name="warm_gold">#D4AF37</color>
+    <color name="warm_gold_dark">#B38F24</color>
+    <color name="warm_gold_light">#F5E8C7</color>
+    
+    <color name="soft_cream">#FAF6F0</color>
+    <color name="soft_cream_bg">#FFFDF9</color>
+    <color name="card_surface">#FFFFFF</color>
+    
+    <color name="text_primary">#2D1F2D</color>
+    <color name="text_secondary">#7A6A7A</color>
+    <color name="divider_color">#E8DED1</color>
+    <color name="card_border">#E5D9C8</color>
+</resources>

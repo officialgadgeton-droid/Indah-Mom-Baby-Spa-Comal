@@ -123,7 +123,11 @@ export const AdminMobileBottomNav: React.FC<AdminMobileBottomNavProps> = ({
   onTabChange,
   onOpenMoreMenu,
 }) => {
-  const isMoreTabActive = activeTab === 'blocked' || activeTab === 'settings' || activeTab === 'tiktok';
+  const isMoreTabActive =
+    activeTab === 'blocked' ||
+    activeTab === 'settings' ||
+    activeTab === 'tiktok' ||
+    activeTab === 'announcements';
 
   return (
     <nav

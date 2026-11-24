@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Indah Mom &amp; Baby Spa</string>
+    <string name="offline_title">Koneksi Internet Terputus</string>
+    <string name="offline_subtitle">Layanan Indah Mom &amp; Baby Spa memerlukan koneksi internet aktif. Silakan periksa jaringan Wi-Fi atau data seluler Anda.</string>
+    <string name="retry_button">Coba Muat Ulang</string>
+    <string name="loading_text">Memuat Layanan Spa…</string>
+    
+    <!-- Notification strings -->
+    <string name="notif_channel_id">clinic_updates</string>
+    <string name="notif_channel_name">Pengumuman &amp; Info Klinik</string>
+    <string name="notif_channel_desc">Notifikasi jadwal operasional, info bidan, dan tips kesehatan ibu &amp; bayi.</string>
+</resources>

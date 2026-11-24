@@ -95,3 +95,15 @@ export interface TikTokVideo {
   created_at?: string;
 }
 
+export type AnnouncementCategory = 'info' | 'health_tip' | 'holiday';
+
+export interface ClinicAnnouncement {
+  id: string;
+  title: string;
+  message: string;
+  category: AnnouncementCategory;
+  is_active: boolean;
+  created_at?: string;
+}
+
+
