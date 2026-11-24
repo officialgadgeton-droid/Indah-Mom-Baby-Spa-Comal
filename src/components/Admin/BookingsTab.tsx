@@ -129,7 +129,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ adminPin }) => {
       const displayFinalTime = timeToSave.includes('WIB') ? timeToSave : `${timeToSave} WIB`;
 
       const msg =
-`*KONFIRMASI JADWAL RESERVASI INDAH MOM & BABY SPA COMAL* 🌸
+        `*KONFIRMASI JADWAL RESERVASI INDAH MOM & BABY SPA COMAL* 🌸
 ---------------------------------------
 Halo Bunda *${booking.mom_name}*, alhamdulillah jadwal reservasi Bunda & Si Kecil telah kami konfirmasi:
 
@@ -141,7 +141,7 @@ Halo Bunda *${booking.mom_name}*, alhamdulillah jadwal reservasi Bunda & Si Keci
 ${booking.child_name ? `- *Nama Si Kecil:* ${booking.child_name} ${booking.child_age ? `(${booking.child_age})` : ''}\n` : ''}${booking.address ? `- *Alamat Kunjungan:* ${booking.address}\n` : ''}${booking.notes ? `- *Catatan Khusus:* ${booking.notes}\n` : ''}---------------------------------------
 *TIPS PERSIAPAN SEBELUM PERAWATAN:*
 1. Pastikan Si Kecil dalam kondisi nyaman, sudah cukup istirahat, dan tidak sedang rewel.
-2. Disarankan tidak langsung dipijat setelah minum susu kenyang (beri jeda 30–45 menit).
+2. Sebelum pijat disarankan Tidak kondisi lapar atau kekenyangan,Beri jeda setelah menyusu atau makan agar bayi nyaman dan tidak muntah.
 3. Jika Si Kecil mendadak demam atau Bunda ingin menyesuaikan jam, segera kabari kami ya.
 
 Sampai jumpa di waktu perawatan Bunda! Terima kasih banyak sudah mempercayakan perawatan Si Kecil di Indah Mom & Baby Spa Comal ❤️`;
@@ -225,7 +225,7 @@ Sampai jumpa di waktu perawatan Bunda! Terima kasih banyak sudah mempercayakan p
     });
 
     const msg =
-`Halo Bunda *${booking.mom_name}*, kami dari *Indah Mom & Baby Spa Comal* 🌸
+      `Halo Bunda *${booking.mom_name}*, kami dari *Indah Mom & Baby Spa Comal* 🌸
 
 Mengingatkan kembali jadwal perawatan untuk Bunda / Si Kecil tercinta:
 - *Layanan:* ${booking.service_name}
@@ -264,8 +264,7 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
 
       if (ok) {
         success(
-          `Rekam tindakan untuk ${treatmentModalBooking.mom_name} berhasil disimpan${
-            markCompletedInput ? ' & status ditandai selesai' : ''
+          `Rekam tindakan untuk ${treatmentModalBooking.mom_name} berhasil disimpan${markCompletedInput ? ' & status ditandai selesai' : ''
           }!`
         );
         setTreatmentModalBooking(null);
@@ -291,7 +290,7 @@ Mohon konfirmasi kesiapannya ya Bunda. Jika ada kendala jam atau Si Kecil sedang
     const childMention = booking.child_name ? `Si Kecil *${booking.child_name}*` : 'Si Kecil';
 
     const msg =
-`Halo Bunda *${booking.mom_name}* 🌸
+      `Halo Bunda *${booking.mom_name}* 🌸
 Salam hangat dan kasih dari Bidan Indah (*Indah Mom & Baby Spa Comal*).
 
 Bagaimana kabar Bunda${childGreeting} hari ini setelah kemarin melakukan perawatan *${booking.service_name}*?
@@ -600,11 +599,10 @@ Jika ada keluhan atau ada hal yang ingin Bunda tanyakan seputar kondisi Si Kecil
                                   key={preset}
                                   type="button"
                                   onClick={() => setAdjustedTimeInput(preset)}
-                                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all border ${
-                                    adjustedTimeInput === preset
+                                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all border ${adjustedTimeInput === preset
                                       ? 'bg-primary text-white border-primary shadow-xs font-bold'
                                       : 'bg-white hover:bg-cream border-slate-200 text-charcoal'
-                                  }`}
+                                    }`}
                                 >
                                   {preset}
                                 </button>

@@ -209,8 +209,9 @@ class ClinicNotificationWorker(
                 connectTimeout = 15000
                 readTimeout = 15000
                 setRequestProperty("apikey", anonKey)
-                setRequestProperty("Authorization", "Bearer $anonKey")
-                setRequestProperty("Accept", "application/json")
+                if (anonKey.startsWith("eyJ")) {
+                    setRequestProperty("Authorization", "Bearer $anonKey")
+                }
             }
 
             val responseCode = connection.responseCode

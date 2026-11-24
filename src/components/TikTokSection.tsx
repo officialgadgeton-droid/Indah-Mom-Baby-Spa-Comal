@@ -108,7 +108,7 @@ export const TikTokSection: React.FC = () => {
               Keseruan & Edukasi di TikTok
             </h2>
             <p className="mt-3 text-sm text-charcoal-light leading-relaxed">
-              Tonton kelucuan si kecil saat berenang baby spa, kehangatan pijat terapi bapil, serta tips kesehatan & stimulasi tumbuh kembang langsung dari Bidan Indah Rahayu.
+              Tonton kelucuan si kecil saat berenang baby spa, kehangatan pijat terapi bapil, serta tips kesehatan & stimulasi tumbuh kembang langsung dari Bidan Dwi Nur Indah Sari.
             </p>
           </div>
         </RevealOnScroll>
@@ -305,9 +305,9 @@ export const TikTokSection: React.FC = () => {
                         <span className="text-[10px] text-charcoal-light/60">
                           {video.created_at
                             ? new Date(video.created_at).toLocaleDateString('id-ID', {
-                                month: 'short',
-                                year: 'numeric',
-                              })
+                              month: 'short',
+                              year: 'numeric',
+                            })
                             : 'Terbaru'}
                         </span>
                       </div>

@@ -98,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       sessionStorage.setItem('indah_dismiss_op_banner', 'true');
       const statusKey = `${operationalStatus?.status}_${operationalStatus?.updated_at || operationalStatus?.note || ''}`;
       sessionStorage.setItem('indah_dismiss_op_banner_key', statusKey);
-    } catch {}
+    } catch { }
   };
 
   // Lock scroll background saat drawer terbuka
@@ -165,11 +165,10 @@ export const Navbar: React.FC<NavbarProps> = ({
       <header className="sticky top-0 z-40 w-full transition-all duration-300">
         {/* Main Navbar Bar */}
         <div
-          className={`transition-all duration-300 ${
-            isScrolled
+          className={`transition-all duration-300 ${isScrolled
               ? 'bg-white/95 backdrop-blur-md shadow-xs border-b border-primary/10 py-2.5 sm:py-3'
               : 'bg-cream/90 backdrop-blur-sm py-3 sm:py-4 border-b border-primary/5'
-          }`}
+            }`}
         >
           <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-2 md:gap-4">
@@ -287,11 +286,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Banner Status Operasional Sticky Floating Menempel Tepat di Bawah Navbar */}
         {operationalStatus && operationalStatus.status !== 'open' && !isBannerDismissed && (
           <div
-            className={`w-full border-b transition-all duration-300 backdrop-blur-md shadow-sm ${
-              operationalStatus.status === 'busy_homecare'
+            className={`w-full border-b transition-all duration-300 backdrop-blur-md shadow-sm ${operationalStatus.status === 'busy_homecare'
                 ? 'bg-[#FFFDF7]/95 border-amber-300/70 text-amber-950 shadow-amber-950/5'
                 : 'bg-[#FFF8F8]/95 border-rose-300/70 text-rose-950 shadow-rose-950/5'
-            }`}
+              }`}
           >
             {isCompact ? (
               /* Tampilan Kompak Saat Di-scroll (scrollY >= 80) */
@@ -299,18 +297,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span
-                      className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                        operationalStatus.status === 'busy_homecare'
+                      className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${operationalStatus.status === 'busy_homecare'
                           ? 'bg-amber-100 text-amber-900 border border-amber-200'
                           : 'bg-rose-100 text-rose-900 border border-rose-200'
-                      }`}
+                        }`}
                     >
                       <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          operationalStatus.status === 'busy_homecare'
+                        className={`w-1.5 h-1.5 rounded-full ${operationalStatus.status === 'busy_homecare'
                             ? 'bg-amber-500 animate-ping'
                             : 'bg-rose-500'
-                        }`}
+                          }`}
                       />
                       {operationalStatus.status === 'busy_homecare'
                         ? 'Homecare / Tugas Luar'
@@ -334,11 +330,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold text-white shadow-xs transition-all hover:scale-105 active:scale-95 ${
-                        operationalStatus.status === 'busy_homecare'
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold text-white shadow-xs transition-all hover:scale-105 active:scale-95 ${operationalStatus.status === 'busy_homecare'
                           ? 'bg-amber-600 hover:bg-amber-700'
                           : 'bg-rose-600 hover:bg-rose-700'
-                      }`}
+                        }`}
                     >
                       <MessageCircle className="w-3 h-3" />
                       <span>Hubungi WA</span>
@@ -361,11 +356,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="flex items-start sm:items-center justify-between gap-3">
                   <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
                     <div
-                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs mt-0.5 sm:mt-0 ${
-                        operationalStatus.status === 'busy_homecare'
+                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs mt-0.5 sm:mt-0 ${operationalStatus.status === 'busy_homecare'
                           ? 'bg-amber-500 text-white'
                           : 'bg-rose-500 text-white'
-                      }`}
+                        }`}
                     >
                       {operationalStatus.status === 'busy_homecare' ? (
                         <Clock className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
@@ -381,11 +375,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                             : 'Klinik Tutup Hari Ini'}
                         </h3>
                         <span
-                          className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full ${
-                            operationalStatus.status === 'busy_homecare'
+                          className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full ${operationalStatus.status === 'busy_homecare'
                               ? 'bg-amber-100 text-amber-900 border border-amber-200'
                               : 'bg-rose-100 text-rose-900 border border-rose-200'
-                          }`}
+                            }`}
                         >
                           Info Praktik Hari Ini
                         </span>
@@ -411,11 +404,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold text-white shadow-xs transition-all hover:scale-105 active:scale-95 ${
-                        operationalStatus.status === 'busy_homecare'
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold text-white shadow-xs transition-all hover:scale-105 active:scale-95 ${operationalStatus.status === 'busy_homecare'
                           ? 'bg-amber-600 hover:bg-amber-700'
                           : 'bg-rose-600 hover:bg-rose-700'
-                      }`}
+                        }`}
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span className="whitespace-nowrap">Hubungi WA Bidan</span>
@@ -471,7 +463,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </span>
                   </div>
                   <p className="text-[10px] text-charcoal-light truncate font-medium">
-                    Bidan Indah Rahayu, S.Tr.Keb.
+                    Bidan Dwi Nur Indah Sari
                   </p>
                 </div>
               </div>
@@ -652,11 +644,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                     }
                     installApp();
                   }}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-xs font-bold transition-all ${
-                    isInstalled
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-xs font-bold transition-all ${isInstalled
                       ? 'bg-emerald-50 text-emerald-800 border-emerald-200 cursor-default'
                       : 'bg-primary/5 hover:bg-primary/10 text-primary border-primary/20 shadow-xs'
-                  }`}
+                    }`}
                 >
                   {isInstalled ? (
                     <>

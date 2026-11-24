@@ -240,17 +240,15 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
                 <button
                   type="button"
                   onClick={() => setCategory('info')}
-                  className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                    category === 'info'
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${category === 'info'
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <div
-                      className={`p-1.5 rounded-lg ${
-                        category === 'info' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
-                      }`}
+                      className={`p-1.5 rounded-lg ${category === 'info' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
+                        }`}
                     >
                       <Info className="w-4 h-4" />
                     </div>
@@ -265,19 +263,17 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
                 <button
                   type="button"
                   onClick={() => setCategory('health_tip')}
-                  className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                    category === 'health_tip'
-                      ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${category === 'health_tip'
+                    ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <div
-                      className={`p-1.5 rounded-lg ${
-                        category === 'health_tip'
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
+                      className={`p-1.5 rounded-lg ${category === 'health_tip'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 text-slate-600'
+                        }`}
                     >
                       <Sparkles className="w-4 h-4" />
                     </div>
@@ -292,19 +288,17 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
                 <button
                   type="button"
                   onClick={() => setCategory('holiday')}
-                  className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${
-                    category === 'holiday'
-                      ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-500/20'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1 ${category === 'holiday'
+                    ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-500/20'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <div
-                      className={`p-1.5 rounded-lg ${
-                        category === 'holiday'
-                          ? 'bg-rose-600 text-white'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
+                      className={`p-1.5 rounded-lg ${category === 'holiday'
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-slate-100 text-slate-600'
+                        }`}
                     >
                       <CalendarOff className="w-4 h-4" />
                     </div>
@@ -395,24 +389,22 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
 
             {/* Kartu Simulasi */}
             <div
-              className={`rounded-2xl p-4 transition-all shadow-sm ${
-                category === 'holiday'
-                  ? 'bg-rose-50 border border-rose-200'
-                  : category === 'health_tip'
+              className={`rounded-2xl p-4 transition-all shadow-sm ${category === 'holiday'
+                ? 'bg-rose-50 border border-rose-200'
+                : category === 'health_tip'
                   ? 'bg-emerald-50/80 border border-emerald-200'
                   : 'bg-white border border-primary/15'
-              }`}
+                }`}
             >
               {/* Badge Kategori */}
               <div className="flex items-center justify-between gap-2 mb-2.5">
                 <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    category === 'holiday'
-                      ? 'bg-rose-600 text-white'
-                      : category === 'health_tip'
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${category === 'holiday'
+                    ? 'bg-rose-600 text-white'
+                    : category === 'health_tip'
                       ? 'bg-emerald-600 text-white'
                       : 'bg-primary text-white'
-                  }`}
+                    }`}
                 >
                   {category === 'holiday' ? (
                     <CalendarOff className="w-3 h-3" />
@@ -425,8 +417,8 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
                     {category === 'holiday'
                       ? 'Pengumuman Libur Klinik'
                       : category === 'health_tip'
-                      ? 'Tips Kesehatan Bidan Indah'
-                      : 'Info Resmi Klinik'}
+                        ? 'Tips Kesehatan Bidan Indah'
+                        : 'Info Resmi Klinik'}
                   </span>
                 </span>
                 <span className="text-[10px] text-charcoal-light">Baru saja</span>
@@ -449,7 +441,7 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
                   <img src="/logo.png" alt="Bidan" className="w-full h-full object-cover" />
                 </div>
                 <div className="text-[10px]">
-                  <p className="font-bold text-primary leading-none">Bidan Indah, S.Tr.Keb</p>
+                  <p className="font-bold text-primary leading-none">Bidan Dwi Nur Indah Sari</p>
                   <p className="text-charcoal-light leading-none mt-0.5">
                     Indah Mom & Baby Spa Comal
                   </p>
@@ -486,44 +478,40 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
             <button
               type="button"
               onClick={() => setFilterCategory('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-                filterCategory === 'all'
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'bg-slate-100 text-charcoal hover:bg-slate-200'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${filterCategory === 'all'
+                ? 'bg-primary text-white shadow-xs'
+                : 'bg-slate-100 text-charcoal hover:bg-slate-200'
+                }`}
             >
               Semua ({announcements.length})
             </button>
             <button
               type="button"
               onClick={() => setFilterCategory('info')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-                filterCategory === 'info'
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'bg-slate-100 text-charcoal hover:bg-slate-200'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${filterCategory === 'info'
+                ? 'bg-primary text-white shadow-xs'
+                : 'bg-slate-100 text-charcoal hover:bg-slate-200'
+                }`}
             >
               Info Klinik
             </button>
             <button
               type="button"
               onClick={() => setFilterCategory('health_tip')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-                filterCategory === 'health_tip'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-charcoal hover:bg-slate-200'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${filterCategory === 'health_tip'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-slate-100 text-charcoal hover:bg-slate-200'
+                }`}
             >
               Tips Kesehatan
             </button>
             <button
               type="button"
               onClick={() => setFilterCategory('holiday')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-                filterCategory === 'holiday'
-                  ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-charcoal hover:bg-slate-200'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${filterCategory === 'holiday'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'bg-slate-100 text-charcoal hover:bg-slate-200'
+                }`}
             >
               Pengumuman Libur
             </button>
@@ -550,22 +538,20 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
             {filteredAnnouncements.map((item) => (
               <div
                 key={item.id}
-                className={`rounded-2xl p-4 border transition-all flex flex-col justify-between ${
-                  item.is_active
-                    ? 'bg-white border-primary/20 shadow-xs'
-                    : 'bg-slate-50 border-slate-200 opacity-75'
-                }`}
+                className={`rounded-2xl p-4 border transition-all flex flex-col justify-between ${item.is_active
+                  ? 'bg-white border-primary/20 shadow-xs'
+                  : 'bg-slate-50 border-slate-200 opacity-75'
+                  }`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        item.category === 'holiday'
-                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                          : item.category === 'health_tip'
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${item.category === 'holiday'
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : item.category === 'health_tip'
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-purple-50 text-purple-700 border border-purple-200'
-                      }`}
+                        }`}
                     >
                       {item.category === 'holiday' ? (
                         <CalendarOff className="w-3 h-3" />
@@ -578,17 +564,16 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
                         {item.category === 'holiday'
                           ? 'Pengumuman Libur'
                           : item.category === 'health_tip'
-                          ? 'Tips Kesehatan'
-                          : 'Info Klinik'}
+                            ? 'Tips Kesehatan'
+                            : 'Info Klinik'}
                       </span>
                     </span>
 
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        item.is_active
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-slate-200 text-slate-600'
-                      }`}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.is_active
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-slate-200 text-slate-600'
+                        }`}
                     >
                       {item.is_active ? 'Aktif Tayang' : 'Arsip'}
                     </span>
@@ -608,12 +593,12 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({ adminPin }) 
                     <span>
                       {item.created_at
                         ? new Date(item.created_at).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
                         : 'Waktu tidak tercatat'}
                     </span>
                   </div>

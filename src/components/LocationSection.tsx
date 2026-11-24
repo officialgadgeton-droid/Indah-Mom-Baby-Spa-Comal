@@ -9,7 +9,7 @@ interface LocationSectionProps {
 }
 
 export const LocationSection: React.FC<LocationSectionProps> = ({
-  clinicAddress = 'Ds. Purwosari Dusun VI 47 RT 001/017, Dusun III, Pecangakan, Kec. Comal, Kabupaten Pemalang, Jawa Tengah 52363',
+  clinicAddress = 'Ds. Purwosari Dusun VI 47 RT 001/017, Pecangakan, Kec. Comal, Kabupaten Pemalang, Jawa Tengah 52363',
   whatsappNumber = '0878-5696-0422',
   operatingHours = 'Buka setiap hari hingga pukul 18.00 WIB',
 }) => {

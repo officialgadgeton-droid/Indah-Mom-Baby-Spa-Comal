@@ -62,7 +62,7 @@ export const AboutSection: React.FC = () => {
                   <div className="flex items-start gap-3">
                     <UserCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     <span>
-                      Lulusan Kebidanan dengan sertifikasi resmi Baby Spa & Pediatric Massage, Lactation Counselor, serta Postnatal Care.
+                      Lulusan Kebidanan dengan sertifikasi resmi Baby Spa & Pediatric Massage, serta Postnatal Care.
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
@@ -100,7 +100,7 @@ export const AboutSection: React.FC = () => {
               </h2>
 
               <p className="text-base text-charcoal-light leading-relaxed">
-                Kami menyadari bahwa masa awal kehidupan Si Kecil dan masa nifas Bunda membutuhkan perhatian medis yang tepat 
+                Kami menyadari bahwa masa awal kehidupan Si Kecil dan masa nifas Bunda membutuhkan perhatian medis yang tepat
                 sekaligus sentuhan emosional yang menenangkan. Kami hadir di Comal untuk memberikan pelayanan terbaik tanpa kompromi.
               </p>
             </RevealOnScroll>

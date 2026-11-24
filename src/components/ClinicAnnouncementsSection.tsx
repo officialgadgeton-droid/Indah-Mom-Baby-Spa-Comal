@@ -53,7 +53,7 @@ export const ClinicAnnouncementsSection: React.FC<ClinicAnnouncementsSectionProp
       setIsDismissed(false);
       try {
         sessionStorage.removeItem('indah_dismiss_announcements');
-      } catch {}
+      } catch { }
     };
 
     window.addEventListener('indah_spa_announcements_updated', handleUpdate);
@@ -97,14 +97,14 @@ export const ClinicAnnouncementsSection: React.FC<ClinicAnnouncementsSectionProp
     setIsDismissed(true);
     try {
       sessionStorage.setItem('indah_dismiss_announcements', 'true');
-    } catch {}
+    } catch { }
   };
 
   const handleRestore = () => {
     setIsDismissed(false);
     try {
       sessionStorage.removeItem('indah_dismiss_announcements');
-    } catch {}
+    } catch { }
   };
 
   const currentAnnouncement =
@@ -183,11 +183,10 @@ export const ClinicAnnouncementsSection: React.FC<ClinicAnnouncementsSectionProp
                 <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-primary/10">
                   <div className="flex items-center gap-2.5">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold ${
-                        currentAnnouncement.category === 'health_tip'
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold ${currentAnnouncement.category === 'health_tip'
                           ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                           : 'bg-primary/15 text-primary border border-primary/25'
-                      }`}
+                        }`}
                     >
                       {currentAnnouncement.category === 'health_tip' ? (
                         <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
@@ -273,7 +272,7 @@ export const ClinicAnnouncementsSection: React.FC<ClinicAnnouncementsSectionProp
                     </div>
                     <div>
                       <p className="text-xs font-bold text-primary leading-tight">
-                        Bidan Indah, S.Tr.Keb
+                        Bidan Dwi Nur Indah Sari
                       </p>
                       <p className="text-[10px] text-charcoal-light">
                         Praktik Mandiri Bidan & Spa Bayi Comal

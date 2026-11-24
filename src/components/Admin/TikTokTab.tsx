@@ -173,7 +173,7 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
             </h2>
           </div>
           <p className="text-xs text-charcoal-light max-w-2xl leading-relaxed">
-            Sematkan video edukasi, testimoni, atau mini vlog dari TikTok Bidan Indah Rahayu. Video akan tampil interaktif dalam player vertikal resmi TikTok di halaman utama website.
+            Sematkan video edukasi, testimoni, atau mini vlog dari TikTok Bidan Dwi Nur Indah Sari. Video akan tampil interaktif dalam player vertikal resmi TikTok di halaman utama website.
           </p>
         </div>
 
@@ -366,31 +366,28 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto">
             <button
               onClick={() => setFilterStatus('all')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                filterStatus === 'all'
+              className={`px-3 py-1.5 rounded-lg transition-colors ${filterStatus === 'all'
                   ? 'bg-white text-primary shadow-xs font-bold'
                   : 'text-charcoal-light hover:text-charcoal'
-              }`}
+                }`}
             >
               Semua ({videos.length})
             </button>
             <button
               onClick={() => setFilterStatus('active')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                filterStatus === 'active'
+              className={`px-3 py-1.5 rounded-lg transition-colors ${filterStatus === 'active'
                   ? 'bg-white text-emerald-700 shadow-xs font-bold'
                   : 'text-charcoal-light hover:text-charcoal'
-              }`}
+                }`}
             >
               Aktif ({videos.filter((v) => v.is_active).length})
             </button>
             <button
               onClick={() => setFilterStatus('hidden')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                filterStatus === 'hidden'
+              className={`px-3 py-1.5 rounded-lg transition-colors ${filterStatus === 'hidden'
                   ? 'bg-white text-charcoal-light shadow-xs font-bold'
                   : 'text-charcoal-light hover:text-charcoal'
-              }`}
+                }`}
             >
               Disembunyikan ({videos.filter((v) => !v.is_active).length})
             </button>
@@ -418,11 +415,10 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
             {filteredVideos.map((video) => (
               <div
                 key={video.id}
-                className={`rounded-2xl border transition-all flex flex-col justify-between overflow-hidden ${
-                  video.is_active
+                className={`rounded-2xl border transition-all flex flex-col justify-between overflow-hidden ${video.is_active
                     ? 'border-slate-200 bg-white hover:shadow-md'
                     : 'border-slate-200/70 bg-slate-50/60 opacity-80'
-                }`}
+                  }`}
               >
                 {/* Embed Player */}
                 <div className="relative aspect-[9/16] w-full bg-black overflow-hidden border-b border-slate-100">
@@ -437,11 +433,10 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
                   {/* Status Overlay Badge */}
                   <div className="absolute top-2 left-2 z-10 pointer-events-none">
                     <span
-                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs ${
-                        video.is_active
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs ${video.is_active
                           ? 'bg-emerald-600 text-white'
                           : 'bg-slate-700 text-white/90'
-                      }`}
+                        }`}
                     >
                       {video.is_active ? '✓ Tayang di Web' : 'Disembunyikan'}
                     </span>
@@ -475,11 +470,10 @@ export const TikTokTab: React.FC<TikTokTabProps> = ({ adminPin }) => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleToggleStatus(video.id, video.is_active)}
-                        className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
-                          video.is_active
+                        className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${video.is_active
                             ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
                             : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                        }`}
+                          }`}
                         title={video.is_active ? 'Sembunyikan dari web' : 'Tayangkan di web'}
                       >
                         {video.is_active ? (
