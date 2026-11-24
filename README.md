@@ -146,15 +146,6 @@ Dari **satu repositori GitHub yang sama**, Anda akan membuat **dua project Pages
    - `VITE_SUPABASE_URL` = `https://your-project.supabase.co`
    - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOi...`
 
-   > 💡 **Cara Menghasilkan Hash SHA-256 untuk PIN Anda:**
-   > - **Node.js:** `node -e "console.log(require('crypto').createHash('sha256').update('PIN_ANDA').digest('hex'))"`
-   > - **PowerShell:** `[BitConverter]::ToString([System.Security.Cryptography.SHA256]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes('PIN_ANDA'))).Replace('-','').ToLower()`
-   > - **Linux/Mac:** `echo -n "PIN_ANDA" | sha256sum | awk '{print $1}'`
-   > *(Nilai default `8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92` adalah hash dari PIN bawaan `123456`)*.
-
-5. Klik **Save and Deploy**.
-6. Project ini akan menghasilkan URL khusus seperti `https://admin-indahspa.pages.dev` yang langsung menampilkan portal PIN Admin di halaman root `/` dengan proteksi `noindex, nofollow`.
-
 ---
 
 ## 💻 Panduan Pengembangan Lokal
