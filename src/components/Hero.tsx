@@ -18,9 +18,7 @@ export const Hero: React.FC<HeroProps> = ({
 
   return (
     <section
-      className={`relative ${
-        hasTopBanner ? 'pt-6 pb-16 md:pt-10 md:pb-24' : 'pt-28 pb-16 md:pt-36 md:pb-24'
-      } overflow-hidden bg-gradient-to-b from-[#FAF4FD] via-[#FDFBF7] to-cream`}
+      className="relative pt-4 sm:pt-6 md:pt-10 pb-16 sm:pb-20 md:pb-24 overflow-hidden bg-gradient-to-b from-[#FAF4FD] via-[#FDFBF7] to-cream"
     >
       {/* 1. Ambient Gradient Blobs (Deep Plum #4A154B/10 & Warm Gold #D4AF37/15) - Floating Smoothly */}
       <div
@@ -46,9 +44,9 @@ export const Hero: React.FC<HeroProps> = ({
       <SpaBubbles count={7} className="opacity-80" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           {/* Left Column: Headline & Action */}
-          <div className="lg:col-span-7 text-center lg:text-left space-y-6">
+          <div className="lg:col-span-7 text-center lg:text-left space-y-4 sm:space-y-6">
             {/* Top pill badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-sm border border-primary/15 shadow-sm text-xs font-semibold text-primary transition-all duration-300 hover:shadow-md">
               <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
@@ -57,7 +55,7 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
 
             {/* Main Headline */}
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-bold text-primary tracking-tight leading-[1.18]">
+            <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-5xl font-bold text-primary tracking-tight leading-[1.2]">
               Perawatan Penuh Kelembutan untuk{' '}
               <span className="text-primary italic font-serif relative">
                 Bunda & Buah Hati
@@ -76,19 +74,19 @@ export const Hero: React.FC<HeroProps> = ({
             </h1>
 
             {/* Sub-headline */}
-            <p className="text-base sm:text-lg text-charcoal-light leading-relaxed max-w-2xl mx-auto lg:mx-0">
+            <p className="text-sm sm:text-base md:text-lg text-charcoal-light leading-relaxed max-w-2xl mx-auto lg:mx-0">
               Ditangani langsung oleh <strong className="text-primary font-bold">Bidan bersertifikat resmi</strong>. 
               Membantu tumbuh kembang optimal Si Kecil, meredakan rewel & flu, serta menghadirkan relaksasi pemulihan 
               paripurna bagi Bunda tercinta.
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-1 sm:pt-2">
               <button
                 onClick={onBookClick}
-                className="btn-shimmer w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-accent hover:bg-accent-dark text-white font-bold text-base shadow-gold transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:translate-y-0"
+                className="btn-shimmer w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-full bg-accent hover:bg-accent-dark text-white font-bold text-sm sm:text-base shadow-gold transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:translate-y-0"
               >
-                <Calendar className="w-5 h-5 relative z-10" />
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 relative z-10" />
                 <span className="relative z-10">Booking Jadwal Sekarang</span>
               </button>
 
@@ -96,7 +94,7 @@ export const Hero: React.FC<HeroProps> = ({
                 href={`https://wa.me/${cleanWa}?text=Halo%20Bidan%20Indah,%20saya%20ingin%20konsultasi%20layanan%20treatment%20spa%20di%20Comal`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-white hover:bg-primary/5 text-primary font-semibold text-base border-2 border-primary/20 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md active:translate-y-0"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-7 py-2.5 sm:py-3.5 rounded-full bg-white hover:bg-primary/5 text-primary font-semibold text-sm sm:text-base border-2 border-primary/20 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md active:translate-y-0"
               >
                 <Phone className="w-4 h-4 text-emerald-600" />
                 <span>Konsultasi WA</span>
@@ -104,7 +102,7 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
 
             {/* Value Highlights Chips */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-primary/10 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-3 sm:pt-4 border-t border-primary/10 text-xs">
               <div className="flex items-center gap-2 text-charcoal">
                 <Award className="w-4 h-4 text-accent shrink-0" />
                 <span className="font-semibold">Bidan Resmi</span>

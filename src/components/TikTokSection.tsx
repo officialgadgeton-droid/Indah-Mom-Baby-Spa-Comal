@@ -91,7 +91,7 @@ export const TikTokSection: React.FC = () => {
   };
 
   return (
-    <section id="tiktok" className="py-20 bg-gradient-to-b from-white via-cream/40 to-white relative overflow-hidden">
+    <section id="tiktok" className="py-20 bg-gradient-to-b from-white via-cream/40 to-white relative overflow-hidden scroll-mt-20 sm:scroll-mt-24">
       {/* Background Decorative Blobs */}
       <div className="absolute top-1/4 -right-24 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 -left-20 w-80 h-80 bg-accent/10 rounded-full blur-3xl pointer-events-none" />

@@ -461,7 +461,7 @@ export const TestimonialsSection: React.FC = () => {
   };
 
   return (
-    <section id="ulasan" className="py-20 bg-gradient-to-b from-[#FAF4FD] via-[#FDFBF7] to-cream relative overflow-hidden">
+    <section id="ulasan" className="py-20 bg-gradient-to-b from-[#FAF4FD] via-[#FDFBF7] to-cream relative overflow-hidden scroll-mt-20 sm:scroll-mt-24">
       {/* Decorative Floating Orbs */}
       <div className="absolute top-0 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-3xl pointer-events-none animate-float-slow-2" />
       <div className="absolute bottom-0 left-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none animate-float-slow-1" />

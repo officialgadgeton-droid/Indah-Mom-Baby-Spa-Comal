@@ -7,7 +7,6 @@ import {
   fetchClinicOperationalStatus,
   supabase,
 } from '../lib/supabase';
-import { Clock, AlertCircle, MessageCircle } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Hero } from './Hero';
 import { ServicesSection } from './ServicesSection';
@@ -162,78 +161,13 @@ export const PublicView: React.FC<PublicViewProps> = ({ onNavigateToAdmin }) => 
       />
 
       <main className="flex-1">
-        {/* Banner Status Operasional Menonjol di Bagian Atas Web Utama (Tepat di Bawah Navbar) */}
-        {hasActiveBanner && (
-          <div className="pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative z-30">
-            <div
-              className={`p-4 sm:p-5 rounded-2xl border shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 animate-fade-in ${
-                operationalStatus.status === 'busy_homecare'
-                  ? 'bg-amber-50/95 border-amber-300 text-amber-950 shadow-amber-900/5'
-                  : 'bg-rose-50/95 border-rose-300 text-rose-950 shadow-rose-900/5'
-              }`}
-            >
-              <div className="flex items-start gap-3.5">
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
-                    operationalStatus.status === 'busy_homecare'
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-rose-500 text-white'
-                  }`}
-                >
-                  {operationalStatus.status === 'busy_homecare' ? (
-                    <Clock className="w-5 h-5 animate-pulse" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm sm:text-base leading-snug">
-                    {operationalStatus.status === 'busy_homecare'
-                      ? 'Sedang Homecare / Persalinan'
-                      : 'Klinik Tutup Hari Ini'}
-                  </h3>
-                  <p className="text-xs sm:text-sm mt-1 leading-relaxed opacity-90">
-                    {operationalStatus.note ? (
-                      <span className="font-medium">{operationalStatus.note}</span>
-                    ) : operationalStatus.status === 'busy_homecare' ? (
-                      'Bidan sedang bertugas di luar/persalinan, reservasi online tetap berjalan & akan segera dikonfirmasi via WhatsApp.'
-                    ) : (
-                      'Praktik klinik hari ini sedang tutup. Bunda tetap dapat melakukan reservasi online untuk jadwal hari berikutnya.'
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-                <a
-                  href={`https://wa.me/${cleanWa}?text=${encodeURIComponent(
-                    operationalStatus.status === 'busy_homecare'
-                      ? 'Halo Bidan Indah, saya ingin bertanya terkait jadwal reservasi / homecare hari ini.'
-                      : 'Halo Bidan Indah, saya ingin konsultasi terkait jadwal perawatan Si Kecil.'
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-xs transition-colors ${
-                    operationalStatus.status === 'busy_homecare'
-                      ? 'bg-amber-600 hover:bg-amber-700'
-                      : 'bg-rose-600 hover:bg-rose-700'
-                  }`}
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>Hubungi WA Bidan</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
-
         <Hero
           onBookClick={() => {
             const el = document.getElementById('reservasi');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
           whatsappNumber={settings.whatsapp_number}
-          hasTopBanner={hasActiveBanner}
+          hasTopBanner={false}
         />
 
         <ServicesSection

@@ -94,7 +94,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   return (
-    <section id="layanan" className="py-20 bg-white relative overflow-hidden">
+    <section id="layanan" className="py-20 bg-white relative overflow-hidden scroll-mt-20 sm:scroll-mt-24">
       {/* Decorative Floating Spa Bubbles */}
       <SpaBubbles count={6} className="opacity-60" />
 

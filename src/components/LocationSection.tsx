@@ -19,7 +19,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
   const embedMapsUrl = 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d3960.7995244171807!2d109.54086200437719!3d-6.914556701893944!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e6fd93a5b19b44d%3A0x9e3c11b9cf3638a4!2sIndah%20Mom%20%26%20Baby%20Spa%20Comal!5e0!3m2!1sid!2sid!4v1795329320258!5m2!1sid!2sid';
 
   return (
-    <section id="lokasi" className="py-20 bg-cream relative overflow-hidden">
+    <section id="lokasi" className="py-20 bg-cream relative overflow-hidden scroll-mt-20 sm:scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <RevealOnScroll variant="fade-up">
           <div className="text-center max-w-3xl mx-auto mb-14">

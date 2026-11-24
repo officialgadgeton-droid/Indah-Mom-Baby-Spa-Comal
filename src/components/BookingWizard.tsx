@@ -394,7 +394,7 @@ Halo Bidan Indah, saya telah mengisi form reservasi di website. Mohon konfirmasi
   const todayStr = new Date().toISOString().split('T')[0];
 
   return (
-    <section id="reservasi" className="py-20 bg-cream-100 relative">
+    <section id="reservasi" className="py-20 bg-cream-100 relative scroll-mt-20 sm:scroll-mt-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Wizard Header */}
         <div className="text-center max-w-2xl mx-auto mb-10">
