@@ -142,7 +142,7 @@ Dari **satu repositori GitHub yang sama**, Anda akan membuat **dua project Pages
    - **Build output directory:** `dist`
 4. Buka tab **Environment variables (Production & Preview)**, lalu tambahkan:
    - `VITE_APP_MODE` = `admin`
-   - `VITE_ADMIN_PIN_HASH` = `8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92` *(hash dari PIN rahasia Anda)*
+   - `VITE_ADMIN_PIN_HASH` = `8d969eef6ecad3c29a3a62928` *(hash dari PIN rahasia Anda)*
    - `VITE_SUPABASE_URL` = `https://your-project.supabase.co`
    - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOi...`
 
