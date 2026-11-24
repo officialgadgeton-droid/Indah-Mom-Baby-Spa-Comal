@@ -14,3 +14,28 @@ dist-ssr/
 *.log
 .DS_Store
 Thumbs.db
+
+# Android Gradle build & IDE files
+android/.gradle/
+android/app/build/
+android/.idea/
+android/*.iml
+android/local.properties
+android/.cxx/
+android/captures/
+android/build/
+*.jks
+*.keystore
+*.apks
+*.apk
+*.aab
+# Android build artifacts & signing keys
+*.jar
+*.jks
+*.keystore
+*.apks
+*.aab
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
